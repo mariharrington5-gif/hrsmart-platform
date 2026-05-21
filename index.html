@@ -5502,8 +5502,24 @@ _sb.auth.getSession().then(async ({ data: { session } }) => {
 
 // ── PRODUCTION finishLogin ──
 async function finishLoginFromDB(role, companySlug) {
-  if (!companySlug) { showToast('No company linked', 'Contact HR Smart to set up your account.', 'error'); return; }
   userRole = role;
+  // Admins with no company go straight to admin panel and load all clients
+  if (!companySlug) {
+    if (role === 'admin') {
+      document.getElementById('login-screen').style.display = 'none';
+      const shell = document.getElementById('hr-shell');
+      shell.style.display = 'block';
+      shell.setAttribute('data-role', 'admin');
+      const badge = document.getElementById('roleBadge');
+      if (badge) { badge.textContent = 'HR Admin'; badge.className = 'role-badge admin'; }
+      showView('admin');
+      loadAllClients();
+      showToast('Welcome back', 'Select a client to load their workspace.', 'info');
+    } else {
+      showToast('No company linked', 'Contact HR Smart to set up your account.', 'error');
+    }
+    return;
+  }
   showToast('Loading…', 'Fetching your company data.', 'info');
   const coData = await loadCompanyFromDB(companySlug);
   if (!coData) { showToast('Company not found', 'No data found for ' + companySlug + '. Contact HR Smart.', 'error'); return; }
