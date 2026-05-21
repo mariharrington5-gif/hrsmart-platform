@@ -3983,9 +3983,16 @@ function renderUpcoming(items) {
   ).join('');
 }
 
-function pickCompany(id) {
-  const sel = document.querySelector('.cp-select');
+async function pickCompany(id) {
+  const sel = document.getElementById('companySwitcher');
   if (sel) sel.value = id;
+  // If not cached yet, fetch from DB first
+  if (!COMPANIES[id]) {
+    showToast('Loading…', 'Fetching client data.', 'info');
+    const coData = await loadCompanyFromDB(id);
+    if (!coData) { showToast('Not found', 'Could not load company: ' + id, 'error'); return; }
+    COMPANIES[id] = coData;
+  }
   loadCompany(id);
 }
 
