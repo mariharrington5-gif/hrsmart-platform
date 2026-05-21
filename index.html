@@ -1071,14 +1071,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
           <div class="an-card-title">Benefits Enrollment Rates</div>
           <div class="an-card-sub">% of eligible employees enrolled · Plan year 2026</div>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:9px;padding:8px 14px;color:#fff;flex-shrink:0">
+        <div id="oeCountdownBox" style="display:none;align-items:center;gap:10px;background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:9px;padding:8px 14px;color:#fff;flex-shrink:0">
           <div style="text-align:center">
-            <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:800;color:var(--gold);line-height:1" id="oeDays">47</div>
+            <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:800;color:var(--gold);line-height:1" id="oeDays">—</div>
             <div style="font-size:.65rem;opacity:.7;margin-top:1px">days</div>
           </div>
           <div>
             <div style="font-size:.75rem;font-weight:700;white-space:nowrap">Open Enrollment</div>
-            <div style="font-size:.68rem;opacity:.75;white-space:nowrap">Opens July 1, 2026</div>
+            <div style="font-size:.68rem;opacity:.75;white-space:nowrap" id="oeDate">—</div>
           </div>
         </div>
       </div>
@@ -3195,6 +3195,22 @@ function loadCompany(id) {
   applyModules(id);
   // refresh roster dept dropdown for this company
   updateRosterDeptFilter(co);
+  // open enrollment countdown — only show if company has a configured OE date
+  const oeBox  = document.getElementById('oeCountdownBox');
+  const oeDays = document.getElementById('oeDays');
+  const oeDate = document.getElementById('oeDate');
+  if (oeBox) {
+    const oeStr = co.oe_date || co.stats?.oeDate || '';
+    if (oeStr) {
+      const oe = new Date(oeStr);
+      const days = Math.max(0, Math.ceil((oe - new Date()) / (1000*60*60*24)));
+      if (oeDays) oeDays.textContent = days;
+      if (oeDate) oeDate.textContent = 'Opens ' + oe.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+      oeBox.style.display = 'flex';
+    } else {
+      oeBox.style.display = 'none';
+    }
+  }
   // re-render all data-dependent UI
   renderTable();
   renderTypeChart();
