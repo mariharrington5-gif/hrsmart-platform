@@ -688,13 +688,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   <div class="login-logo">HR<span>Smart</span></div>
   <div class="login-tagline">Smart HR tracking — real expertise behind every step.</div>
 
-  <!-- Company picker -->
-  <div class="company-picker">
-    <div class="cp-label">Demo Company</div>
-    <select class="cp-select" onchange="pickCompany(this.value)">
-      <option value="Crestline">⚡ Crestline Manufacturing — EV Manufacturing</option>
-      <option value="meridian">🏥 Meridian Health Group — Healthcare Clinic</option>
-    </select>
+  <!-- Company picker (populated dynamically by loadAllClients) -->
+  <div class="company-picker" id="companyPickerWrap" style="display:none">
+    <div class="cp-label">Client</div>
+    <select id="companySwitcher" class="cp-select" onchange="pickCompany(this.value)"></select>
   </div>
 
   <!-- Employee login (shown by default) -->
@@ -1317,7 +1314,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       </div>
       <div class="email-field">
         <label>CC (HR Manager)</label>
-        <input type="email" id="emailCC" value="hr@crestlinemfg.com"/><!-- populated dynamically in openEmailModal() -->
+        <input type="email" id="emailCC" value=""/><!-- populated dynamically in openEmailModal() -->
       </div>
       <div class="email-field">
         <label>Subject</label>
@@ -1869,7 +1866,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
           <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
             <div>
               <div style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">HR Notification Email</div>
-              <input type="email" value="hr@crestlinemfg.com" style="padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:.87rem;width:100%;outline:none;color:var(--text)"/>
+              <input type="email" value="" placeholder="hr@yourcompany.com" style="padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:.87rem;width:100%;outline:none;color:var(--text)"/>
             </div>
             <div>
               <div style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Anthropic API Key</div>
@@ -1890,7 +1887,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
             <div>
               <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Platform Name (Logo)</div>
-              <input type="text" id="brandingLogoText" value="HR Smart" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:.87rem;outline:none;color:var(--text)" placeholder="e.g. Crestline HR Hub"/>
+              <input type="text" id="brandingLogoText" value="HR Smart" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:.87rem;outline:none;color:var(--text)" placeholder="e.g. Acme Corp HR Hub"/>
             </div>
             <div>
               <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tagline / Subtitle</div>
@@ -1898,11 +1895,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
             </div>
             <div>
               <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Company Name</div>
-              <input type="text" id="brandingCompanyName" value="Crestline Manufacturing" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:.87rem;outline:none;color:var(--text)"/>
+              <input type="text" id="brandingCompanyName" value="" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:.87rem;outline:none;color:var(--text)" placeholder="Your Company Name"/>
             </div>
             <div>
               <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">HR Contact Email</div>
-              <input type="email" id="brandingEmail" value="hr@crestlinemfg.com" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:.87rem;outline:none;color:var(--text)"/>
+              <input type="email" id="brandingEmail" value="" placeholder="hr@yourcompany.com" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:.87rem;outline:none;color:var(--text)"/>
             </div>
           </div>
           <div style="margin-top:14px">
@@ -1922,36 +1919,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="card" style="margin-bottom:16px">
         <div class="card-head">
           <div>
-            <div class="card-title">🏢 Demo Company</div>
-            <div style="font-size:.78rem;color:var(--muted);margin-top:2px">Switch between demo companies to show prospects how the platform adapts to different industries</div>
+            <div class="card-title">🏢 Client Accounts</div>
+            <div style="font-size:.78rem;color:var(--muted);margin-top:2px">All active client accounts. Click a client to load their workspace.</div>
           </div>
-          <div style="font-size:.75rem;font-weight:600;color:var(--green);background:var(--green-bg);padding:4px 10px;border-radius:20px">Active: <span class="company-name-display">Crestline Manufacturing</span></div>
+          <div style="font-size:.75rem;font-weight:600;color:var(--green);background:var(--green-bg);padding:4px 10px;border-radius:20px">Active: <span class="company-name-display">—</span></div>
         </div>
-        <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <div id="demo-co-Crestline" onclick="pickCompany('Crestline')" style="border:2px solid var(--navy);background:var(--green-bg);border-radius:var(--r);padding:20px;cursor:pointer;transition:all .2s">
-            <div style="font-size:2rem;margin-bottom:8px">⚡</div>
-            <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1rem;color:var(--navy);margin-bottom:4px">Crestline Manufacturing</div>
-            <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px">EV Manufacturing · Los Angeles, CA · 213 employees</div>
-            <div style="display:flex;flex-wrap:wrap;gap:6px">
-              <span class="status-pill sp-active">Manufacturing</span>
-              <span class="status-pill sp-approved">Engineering</span>
-              <span class="status-pill sp-pending">Operations</span>
-            </div>
-          </div>
-          <div id="demo-co-meridian" onclick="pickCompany('meridian')" style="border:2px solid var(--border);border-radius:var(--r);padding:20px;cursor:pointer;transition:all .2s">
-            <div style="font-size:2rem;margin-bottom:8px">🏥</div>
-            <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1rem;color:var(--navy);margin-bottom:4px">Meridian Health Group</div>
-            <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px">Multi-location Clinic · Los Angeles, CA · 150 employees</div>
-            <div style="display:flex;flex-wrap:wrap;gap:6px">
-              <span class="status-pill sp-active">Nursing</span>
-              <span class="status-pill sp-approved">Clinical</span>
-              <span class="status-pill sp-pending">Administration</span>
-            </div>
-          </div>
+        <div id="adminDemoCards" style="padding:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">
+          <div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--muted);font-size:.87rem">Loading clients…</div>
         </div>
-      </div>
-      <div style="background:var(--yellow-bg);border:1px solid #fde68a;border-radius:var(--r);padding:14px 18px;font-size:.83rem;color:#92400e">
-        <strong>Demo mode only.</strong> In production each client gets their own instance pre-loaded with their company data, employees, and handbook. Switching is not a feature end-users see.
       </div>
     </div>
 
@@ -1970,8 +1945,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;padding:12px 14px;background:var(--bg);border-radius:9px;border:1px solid var(--border)">
             <span style="font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Editing modules for:</span>
             <select id="modulesCompanySelect" onchange="renderModulesPanel(this.value)" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:'Inter',sans-serif;font-size:.86rem;color:var(--text);background:white;cursor:pointer;outline:none">
-              <option value="Crestline">⚡ Crestline Manufacturing</option>
-              <option value="meridian">🏥 Meridian Health Group</option>
+              <!-- populated dynamically by loadAllClients -->
             </select>
             <span style="font-size:.77rem;color:var(--muted)">Changes apply immediately when this client is active</span>
           </div>
@@ -2013,14 +1987,12 @@ function apiHeaders() {
 // ── COMPANY CONTEXT HELPER ──
 // Returns company-specific contact info — used in emails, templates, and UI strings
 function coCtx() {
-  const co = COMPANIES[currentCompany] || COMPANIES.Crestline;
-  const isMeridian = co.name.toLowerCase().includes('meridian');
-  return {
-    name:   co.name,
-    email:  isMeridian ? 'hr@meridianhealth.com'  : 'hr@crestlinemfg.com',
-    domain: isMeridian ? 'meridianhealth.com'      : 'crestlinemfg.com',
-    phone:  isMeridian ? '(555) 876-5432'          : '(555) 234-5678',
-  };
+  const co = COMPANIES[currentCompany] || {};
+  const name   = co.name   || 'HR Smart';
+  const hrEmail= co.hrEmail || co.hr_email || '';
+  const domain = hrEmail ? hrEmail.split('@')[1] || 'company.com' : 'company.com';
+  const phone  = co.phone  || co.hr_phone  || '(555) 000-0000';
+  return { name, email: hrEmail || ('hr@' + domain), domain, phone };
 }
 
 // ── LOA DASHBOARD STAT REFRESH ──
@@ -2187,7 +2159,7 @@ function addEmailLog(name, type, caseId, attachedForms=[]) {
       <div class="el-dot"></div>
       <div style="flex:1">
         <div class="el-name">${e.name} <span style="font-weight:400;color:var(--muted)">· ${e.caseId}</span></div>
-        <div class="el-desc">${e.type} · Approved &amp; sent · CC: ${e.hrEmail || 'hr@crestlinemfg.com'}</div>
+        <div class="el-desc">${e.type} · Approved &amp; sent · CC: ${e.hrEmail || coCtx().email}</div>
         ${e.attachedForms && e.attachedForms.length ? `<div style="font-size:.72rem;color:#1a56c4;margin-top:2px">📎 ${e.attachedForms.map(f=>f.name).join(' · ')}</div>` : ''}
       </div>
       <div class="el-time">${e.time}</div>
@@ -2202,32 +2174,7 @@ let currentSessionName = ''; // tracks who is logged in for approval audit trail
 window.hrPending = window.hrPending || [];
 
 // ── LOA DATA ──
-let loaData = [
-  {id:'LOA-1041',name:'Maria Santos',title:'Assembly Tech',type:'FMLA/CFRA',tclass:'fmla',start:'Apr 28',end:'Jul 21',status:'Awaiting Cert',sclass:'sp-cert',days:68,urgent:true,
-    timeline:[{step:'Request Received',note:'Employee submitted request',date:'Apr 25',done:true},{step:'HR Review',note:'Eligibility confirmed (12mo, 1250hrs)',date:'Apr 26',done:true},{step:'Notice to Employee',note:'FMLA Notice sent',date:'Apr 27',done:true},{step:'Medical Certification',note:'Due May 10 — OVERDUE (4 days)',date:'May 10',done:false,active:true},{step:'Approval',note:'Pending certification',date:'TBD',done:false},{step:'Benefits Continuation',note:'Pending approval',date:'TBD',done:false}],
-    next:'Send immediate follow-up to employee and healthcare provider. Document overdue status. If not received within 2 business days, leave may be delayed.'},
-  {id:'LOA-1042',name:'Tom Chen',title:'QA Engineer',type:'FMLA/CFRA',tclass:'fmla',start:'Mar 15',end:'May 20',status:'Returning',sclass:'sp-returning',days:5,urgent:false,
-    timeline:[{step:'Request Received',date:'Mar 12',done:true},{step:'Eligibility Confirmed',date:'Mar 13',done:true},{step:'Medical Cert Received',date:'Mar 14',done:true},{step:'Leave Approved',date:'Mar 15',done:true},{step:'Return-to-Work Form',note:'Not yet received — due before return',date:'May 18',done:false,active:true},{step:'Return to Work',date:'May 20',done:false}],
-    next:'Send return-to-work medical certification form immediately. Employee must provide fit-for-duty cert before returning.'},
-  {id:'LOA-1043',name:'Lisa Park',title:'Product Manager',type:'Pregnancy Disability',tclass:'pdl',start:'Apr 1',end:'Jun 1',status:'Active',sclass:'sp-active',days:18,urgent:false,
-    timeline:[{step:'Request Received',date:'Mar 28',done:true},{step:'Eligibility Confirmed',date:'Mar 29',done:true,note:'PDL — eligible from day 1'},{step:'Medical Cert Received',date:'Mar 30',done:true},{step:'PDL Approved',date:'Apr 1',done:true},{step:'Benefits Continuation',note:'Employee paying her share via invoice',date:'Apr 1',done:true},{step:'CFRA Baby Bonding',note:'Eligible to begin June 1 — up to 12 weeks',date:'Jun 1',done:false,active:true}],
-    next:'Notify employee of CFRA baby bonding eligibility. Send CFRA paperwork by May 20. Benefits continue through bonding leave.'},
-  {id:'LOA-1044',name:'James Okafor',title:'Fleet Technician',type:'Personal Leave',tclass:'personal',start:'May 6',end:'Jun 5',status:'Pending Approval',sclass:'sp-pending',days:22,urgent:true,
-    timeline:[{step:'Request Received',date:'May 6',done:true},{step:'HR Initial Review',note:'Waiting for employee response — 8 days',date:'May 7',done:true},{step:'HR Approval',note:'Not yet obtained',date:'TBD',done:false,active:true},{step:'Confirm Vacation Exhausted',note:'Required before personal leave',date:'TBD',done:false},{step:'Leave Approved',date:'TBD',done:false}],
-    next:'Attempt immediate contact with employee via phone and email. Personal leave requires exhausting all vacation first. Confirm supervisor is aware.'},
-  {id:'LOA-1045',name:'Priya Nair',title:'Software Engineer',type:'FMLA/CFRA',tclass:'fmla',start:'May 10',end:'Aug 2',status:'Awaiting Cert',sclass:'sp-cert',days:80,urgent:false,
-    timeline:[{step:'Request Received',date:'May 8',done:true},{step:'Eligibility Confirmed',date:'May 9',done:true},{step:'FMLA Notice Sent',date:'May 10',done:true},{step:'Medical Certification',note:'Due May 16 — in 2 days',date:'May 16',done:false,active:true},{step:'Leave Approval',date:'TBD',done:false}],
-    next:'Send reminder to employee today. Certification deadline is May 16. Failure to provide may delay leave approval.'},
-  {id:'LOA-1046',name:'Anika Patel',title:'HR Coordinator',type:'Baby Bonding',tclass:'bonding',start:'Mar 5',end:'Jun 5',status:'Active',sclass:'sp-active',days:22,urgent:false,
-    timeline:[{step:'PDL Completed',date:'Mar 4',done:true},{step:'CFRA Paperwork Submitted',date:'Mar 1',done:true},{step:'Baby Bonding Approved',date:'Mar 5',done:true},{step:'Benefits Continuation',date:'Mar 5',done:true},{step:'Return to Work',date:'Jun 5',done:false,active:true}],
-    next:'Confirm return date with employee. Send return-to-work checklist 2 weeks prior.'},
-  {id:'LOA-1047',name:'Marcus Webb',title:'Production Supervisor',type:'FMLA/CFRA',tclass:'fmla',start:'Apr 10',end:'Jul 3',status:'Active',sclass:'sp-active',days:50,urgent:false,
-    timeline:[{step:'Request Received',date:'Apr 8',done:true},{step:'Eligibility Confirmed',date:'Apr 9',done:true},{step:'Cert Received',date:'Apr 10',done:true},{step:'Approved',date:'Apr 11',done:true},{step:'Cert Renewal',note:'Due May 30',date:'May 30',done:false,active:true},{step:'Return to Work',date:'Jul 3',done:false}],
-    next:'Send medical recertification reminder by May 25. Ensure employee knows recert is required to continue leave.'},
-  {id:'LOA-1048',name:'Diana Reyes',title:'Logistics Coord.',type:'Reproductive Loss',tclass:'repro',start:'May 12',end:'May 16',status:'New',sclass:'sp-new',days:2,urgent:false,
-    timeline:[{step:'Request Received',date:'May 12',done:true},{step:'Eligibility Check',note:'30+ days employed — eligible',date:'May 12',done:true},{step:'Approval',note:'Up to 5 days, not required to be consecutive',date:'May 13',done:false,active:true},{step:'Return to Work',date:'May 17',done:false}],
-    next:'Approve leave. Handle with sensitivity. Employee may use accrued vacation/sick if preferred. Ensure confidentiality.'},
-];
+let loaData = [];  // populated from Supabase on login
 
 // ── RENDER TABLE ──
 function renderTable(filter='all') {
@@ -2614,7 +2561,8 @@ async function benAI(id, title) {
 
 // ── PORTAL CHAT ──
 let pcHistory = [];
-const SYSTEM = `You are a friendly HR assistant for Crestline Manufacturing employees. Answer questions in a warm, conversational tone — like a knowledgeable colleague, not a legal document.
+// SYSTEM is a function so the company name evaluates at call time, not parse time
+function getSystemPrompt() { return `You are a friendly HR assistant for ${(COMPANIES[currentCompany]||{}).name||'your company'} employees. Answer questions in a warm, conversational tone — like a knowledgeable colleague, not a legal document.
 
 FORMATTING RULES (follow exactly):
 - NEVER use markdown: no #, ##, ###, no **, no *, no _
@@ -2622,10 +2570,10 @@ FORMATTING RULES (follow exactly):
 - For lists, use a plain dash "–" at the start of each item, one per line
 - Use CAPS sparingly for emphasis (e.g. "you MUST get supervisor approval")
 - Keep answers short and scannable — 3 to 6 sentences max, then bullets if needed
-- End answers about leave or benefits with: "Questions? Reach HR at hr@crestlinemfg.com."
+- End answers about leave or benefits with: "Questions? Reach HR at ${coCtx().email}."
 
 HANDBOOK:
-${HANDBOOK}`;
+${HANDBOOK}`; }
 
 // Convert any markdown the AI sends into clean chat HTML
 function renderMd(text) {
@@ -2662,7 +2610,7 @@ async function pcSend() {
   pcAppend('user',text); pcHistory.push({role:'user',content:text}); inp.value='';
   btn.disabled=true; pcTyping();
   try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:apiHeaders(),body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:800,system:SYSTEM,messages:pcHistory.slice(-8)})});
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:apiHeaders(),body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:800,system:getSystemPrompt(),messages:pcHistory.slice(-8)})});
     const data=await res.json();
     const reply=data.content?.find(b=>b.type==='text')?.text||`I couldn't find that in the handbook. Please contact HR directly at ${coCtx().email}.`;
     pcHistory.push({role:'assistant',content:reply});
@@ -3008,16 +2956,7 @@ function toggleFlow() {
 }
 
 // ── EMPLOYEE ROSTER DATA ──
-let rosterData = [
-  {id:'EMP-1041',first:'Maria',last:'Santos',dept:'Manufacturing',title:'Assembly Tech',manager:'Robert Torres',start:'Mar 15, 2023',email:'maria.santos@crestlinemfg.com',status:'leave',empType:'Full-Time'},
-  {id:'EMP-1042',first:'Tom',last:'Chen',dept:'Engineering',title:'QA Engineer',manager:'Sarah Kim',start:'Jan 8, 2022',email:'tom.chen@crestlinemfg.com',status:'leave',empType:'Full-Time'},
-  {id:'EMP-1043',first:'Lisa',last:'Park',dept:'Product',title:'Product Manager',manager:'David Lee',start:'Jun 1, 2021',email:'lisa.park@crestlinemfg.com',status:'active',empType:'Full-Time'},
-  {id:'EMP-1044',first:'James',last:'Okafor',dept:'Logistics',title:'Fleet Technician',manager:'Ana Reyes',start:'Sep 20, 2022',email:'james.okafor@crestlinemfg.com',status:'leave',empType:'Part-Time'},
-  {id:'EMP-1045',first:'Priya',last:'Nair',dept:'Engineering',title:'Software Engineer',manager:'Sarah Kim',start:'Feb 14, 2023',email:'priya.nair@crestlinemfg.com',status:'active',empType:'Full-Time'},
-  {id:'EMP-1046',first:'Anika',last:'Patel',dept:'HR',title:'HR Coordinator',manager:'Jessica Moore',start:'Nov 3, 2020',email:'anika.patel@crestlinemfg.com',status:'active',empType:'Full-Time'},
-  {id:'EMP-1047',first:'Marcus',last:'Webb',dept:'Operations',title:'Production Supervisor',manager:'Carlos Mendez',start:'May 17, 2019',email:'marcus.webb@crestlinemfg.com',status:'active',empType:'Seasonal'},
-  {id:'EMP-1048',first:'Diana',last:'Reyes',dept:'Logistics',title:'Logistics Coord.',manager:'Ana Reyes',start:'Jul 29, 2024',email:'diana.reyes@crestlinemfg.com',status:'active',empType:'Temp'},
-];
+let rosterData = [];  // populated from Supabase on login via loadCompanyFromDB()
 
 function renderRoster(data) {
   const tbody = document.getElementById('rosterTableBody');
@@ -3252,300 +3191,12 @@ function downloadTemplate() {
   showToast('Template downloaded', 'Fill it in and upload it to import your team.');
 }
 
-// ══ DEMO COMPANY SWITCHER ══
-const COMPANIES = {
-  Crestline: {
-    name:'Crestline Manufacturing', tagline:'EV Manufacturing · Los Angeles, CA', icon:'⚡', size:'213 employees',
-    demoHint:'Try <b>Maria Santos / EMP-1041</b>, <b>Tom Chen / EMP-1042</b>, <b>Lisa Park / EMP-1043</b>, or <b>James Okafor / EMP-1044</b>',
-    loa:[
-      {id:'LOA-1041',name:'Maria Santos',title:'Assembly Tech',type:'FMLA/CFRA',tclass:'fmla',start:'Apr 28',end:'Jul 21',status:'Awaiting Cert',sclass:'sp-cert',days:68,urgent:true,
-        timeline:[{step:'Request Received',note:'Employee submitted request',date:'Apr 25',done:true},{step:'HR Review',note:'Eligibility confirmed',date:'Apr 26',done:true},{step:'Notice to Employee',note:'FMLA Notice sent',date:'Apr 27',done:true},{step:'Medical Certification',note:'Due May 10 — OVERDUE',date:'May 10',done:false,active:true},{step:'Approval',note:'Pending certification',date:'TBD',done:false},{step:'Benefits Continuation',note:'Pending approval',date:'TBD',done:false}],
-        next:'Send immediate follow-up to employee and healthcare provider. Document overdue status.'},
-      {id:'LOA-1042',name:'Tom Chen',title:'QA Engineer',type:'FMLA/CFRA',tclass:'fmla',start:'Mar 15',end:'May 20',status:'Returning',sclass:'sp-returning',days:5,urgent:false,
-        timeline:[{step:'Request Received',date:'Mar 12',done:true},{step:'Eligibility Confirmed',date:'Mar 13',done:true},{step:'Medical Cert Received',date:'Mar 14',done:true},{step:'Leave Approved',date:'Mar 15',done:true},{step:'Return-to-Work Form',note:'Not yet received — due before return',date:'May 18',done:false,active:true},{step:'Return to Work',date:'May 20',done:false}],
-        next:'Send return-to-work medical certification form immediately.'},
-      {id:'LOA-1043',name:'Lisa Park',title:'Product Manager',type:'Pregnancy Disability',tclass:'pdl',start:'Apr 1',end:'Jun 1',status:'Active',sclass:'sp-active',days:18,urgent:false,
-        timeline:[{step:'Request Received',date:'Mar 28',done:true},{step:'Eligibility Confirmed',date:'Mar 29',done:true,note:'PDL — eligible from day 1'},{step:'Medical Cert Received',date:'Mar 30',done:true},{step:'PDL Approved',date:'Apr 1',done:true},{step:'Benefits Continuation',date:'Apr 1',done:true},{step:'CFRA Baby Bonding',note:'Eligible to begin June 1',date:'Jun 1',done:false,active:true}],
-        next:'Notify employee of CFRA baby bonding eligibility. Send CFRA paperwork by May 20.'},
-      {id:'LOA-1044',name:'James Okafor',title:'Fleet Technician',type:'Personal Leave',tclass:'personal',start:'May 6',end:'Jun 5',status:'Pending Approval',sclass:'sp-pending',days:22,urgent:true,
-        timeline:[{step:'Request Received',date:'May 6',done:true},{step:'HR Initial Review',date:'May 7',done:true},{step:'HR Approval',note:'Not yet obtained',date:'TBD',done:false,active:true},{step:'Confirm Vacation Exhausted',date:'TBD',done:false},{step:'Leave Approved',date:'TBD',done:false}],
-        next:'Attempt immediate contact with employee. Personal leave requires exhausting all vacation first.'},
-      {id:'LOA-1045',name:'Priya Nair',title:'Software Engineer',type:'FMLA/CFRA',tclass:'fmla',start:'May 10',end:'Aug 2',status:'Awaiting Cert',sclass:'sp-cert',days:80,urgent:false,
-        timeline:[{step:'Request Received',date:'May 8',done:true},{step:'Eligibility Confirmed',date:'May 9',done:true},{step:'FMLA Notice Sent',date:'May 10',done:true},{step:'Medical Certification',note:'Due May 16 — in 2 days',date:'May 16',done:false,active:true},{step:'Leave Approval',date:'TBD',done:false}],
-        next:'Send reminder to employee today. Certification deadline is May 16.'},
-      {id:'LOA-1046',name:'Anika Patel',title:'HR Coordinator',type:'Baby Bonding',tclass:'bonding',start:'Mar 5',end:'Jun 5',status:'Active',sclass:'sp-active',days:22,urgent:false,
-        timeline:[{step:'PDL Completed',date:'Mar 4',done:true},{step:'CFRA Paperwork Submitted',date:'Mar 1',done:true},{step:'Baby Bonding Approved',date:'Mar 5',done:true},{step:'Benefits Continuation',date:'Mar 5',done:true},{step:'Return to Work',date:'Jun 5',done:false,active:true}],
-        next:'Confirm return date with employee. Send return-to-work checklist 2 weeks prior.'},
-      {id:'LOA-1047',name:'Marcus Webb',title:'Production Supervisor',type:'FMLA/CFRA',tclass:'fmla',start:'Apr 10',end:'Jul 3',status:'Active',sclass:'sp-active',days:50,urgent:false,
-        timeline:[{step:'Request Received',date:'Apr 8',done:true},{step:'Eligibility Confirmed',date:'Apr 9',done:true},{step:'Cert Received',date:'Apr 10',done:true},{step:'Approved',date:'Apr 11',done:true},{step:'Cert Renewal',note:'Due May 30',date:'May 30',done:false,active:true},{step:'Return to Work',date:'Jul 3',done:false}],
-        next:'Send medical recertification reminder by May 25.'},
-      {id:'LOA-1048',name:'Diana Reyes',title:'Logistics Coord.',type:'Reproductive Loss',tclass:'repro',start:'May 12',end:'May 16',status:'New',sclass:'sp-new',days:2,urgent:false,
-        timeline:[{step:'Request Received',date:'May 12',done:true},{step:'Eligibility Check',note:'30+ days employed — eligible',date:'May 12',done:true},{step:'Approval',note:'Up to 5 days',date:'May 13',done:false,active:true},{step:'Return to Work',date:'May 17',done:false}],
-        next:'Approve leave. Handle with sensitivity. Ensure confidentiality.'},
-    ],
-    roster:[
-      {id:'EMP-1041',first:'Maria',last:'Santos',dept:'Manufacturing',title:'Assembly Tech',manager:'Robert Torres',start:'Mar 15, 2023',email:'maria.santos@crestlinemfg.com',status:'leave',empType:'Full-Time'},
-      {id:'EMP-1042',first:'Tom',last:'Chen',dept:'Engineering',title:'QA Engineer',manager:'Sarah Kim',start:'Jan 8, 2022',email:'tom.chen@crestlinemfg.com',status:'leave',empType:'Full-Time'},
-      {id:'EMP-1043',first:'Lisa',last:'Park',dept:'Product',title:'Product Manager',manager:'Alex Nguyen',start:'Jun 12, 2021',email:'lisa.park@crestlinemfg.com',status:'leave',empType:'Full-Time'},
-      {id:'EMP-1044',first:'James',last:'Okafor',dept:'Operations',title:'Fleet Technician',manager:'Dana Cruz',start:'Sep 3, 2022',email:'james.okafor@crestlinemfg.com',status:'leave',empType:'Full-Time'},
-      {id:'EMP-1045',first:'Priya',last:'Nair',dept:'Engineering',title:'Software Engineer',manager:'Sarah Kim',start:'Feb 17, 2024',email:'priya.nair@crestlinemfg.com',status:'leave',empType:'Full-Time'},
-      {id:'EMP-1046',first:'Anika',last:'Patel',dept:'HR',title:'HR Coordinator',manager:'Mari H.',start:'Nov 1, 2022',email:'anika.patel@crestlinemfg.com',status:'leave',empType:'Part-Time'},
-      {id:'EMP-1047',first:'Marcus',last:'Webb',dept:'Manufacturing',title:'Prod. Supervisor',manager:'Robert Torres',start:'Jul 22, 2019',email:'marcus.webb@crestlinemfg.com',status:'leave',empType:'Seasonal'},
-      {id:'EMP-1048',first:'Diana',last:'Reyes',dept:'Logistics',title:'Logistics Coord.',manager:'Dana Cruz',start:'Apr 5, 2023',email:'diana.reyes@crestlinemfg.com',status:'leave',empType:'Temp'},
-    ],
-    empDir:{
-      'maria santos|emp-1041':'LOA-1041','tom chen|emp-1042':'LOA-1042','lisa park|emp-1043':'LOA-1043',
-      'james okafor|emp-1044':'LOA-1044','priya nair|emp-1045':'LOA-1045','anika patel|emp-1046':'LOA-1046',
-      'marcus webb|emp-1047':'LOA-1047','diana reyes|emp-1048':'LOA-1048',
-    },
-    depts:[
-      {name:'Engineering',   count:68, loa:3},{name:'Operations',    count:54, loa:4},
-      {name:'Product',       count:31, loa:2},{name:'Manufacturing', count:49, loa:2},
-      {name:'HR & Admin',    count:18, loa:1},{name:'Logistics',     count:27, loa:0},
-    ],
-    benefits:[
-      {label:'Medical',  pct:94, enrolled:158, eligible:168, color:'#111111'},
-      {label:'Dental',   pct:89, enrolled:150, eligible:168, color:'#C8A46A'},
-      {label:'401(k)',   pct:88, enrolled:148, eligible:168, color:'#9C7BB0'},
-      {label:'Vision',   pct:76, enrolled:128, eligible:168, color:'#6B9080'},
-      {label:'HSA',      pct:61, enrolled:103, eligible:168, color:'#C8A46A'},
-      {label:'FSA',      pct:34, enrolled:57,  eligible:168, color:'#D4A5A5'},
-      {label:'EAP',      pct:28, enrolled:47,  eligible:168, color:'#C9DDD0'},
-    ],
-    stats:{
-      loaTotal:'12', loaCert:'4', loaActive:'7', loaUrgent:'2',
-      loaTotalSub:'3 new this week', loaCertSub:'2 due within 3 days',
-      loaActiveSub:'2 returning this month', loaUrgentSub:'Overdue certifications',
-      kpiEmp:'247', kpiRetention:'94.2%', kpiLeaves:'12', kpiAssessment:'78%',
-      kpiEmpSub:'▲ 12 from last quarter', kpiRetentionSub:'▲ 1.4% vs prior year',
-      kpiLeavesSub:'● 2 overdue certifications', kpiAssessmentSub:'▼ 3 overdue this cycle',
-      empTotal:247, empFT:168, empPT:42, empSea:24, empTmp:13,
-    },
-    assessments:[
-      {label:'HR & Admin',    pct:100, color:'#C8A46A'},
-      {label:'Operations',    pct:91,  color:'#C8A46A'},
-      {label:'Engineering',   pct:82,  color:'#C8A46A'},
-      {label:'Logistics',     pct:74,  color:'#D4924A'},
-      {label:'Product',       pct:67,  color:'#D4924A'},
-      {label:'Manufacturing', pct:58,  color:'#C5566A'},
-    ],
-    attention:[
-      {level:'urgent', name:'Maria Santos',  issue:'Cert Overdue',        detail:'FMLA certification was due May 10. 4 days overdue.'},
-      {level:'urgent', name:'James Okafor',  issue:'No Response',          detail:'Requested leave 8 days ago. No employee contact.'},
-      {level:'warn',   name:'Priya Nair',    issue:'Cert Due in 2 Days',   detail:'Medical cert deadline: May 16.'},
-      {level:'warn',   name:'Tom Chen',      issue:'Returning May 20',     detail:'Return-to-work form not yet received.'},
-      {level:'info',   name:'Lisa Park',     issue:'CFRA Eligible',        detail:'PDL ends June 1. CFRA baby bonding available.'},
-    ],
-    upcoming:[
-      {name:'Tom Chen',    event:'Return to Work',         date:'May 20',  pill:'Get RTW Form',     pillClass:'sp-cert'},
-      {name:'Marcus Webb', event:'Cert Renewal Due',        date:'May 30',  pill:'Send Reminder',    pillClass:'sp-cert'},
-      {name:'Lisa Park',   event:'PDL Ends → CFRA Starts', date:'June 1',  pill:'Notify & Confirm', pillClass:'sp-pending'},
-      {name:'Anika Patel', event:'Leave Ends',              date:'June 5',  pill:'Confirm Return',   pillClass:'sp-returning'},
-    ],
-    leaveHistory:[
-      {name:'Simone Carter',  title:'QA Specialist',       type:'FMLA/CFRA',            start:'Oct 13, 2025', end:'Jan 5, 2026',  duration:'84 days',  year:2025},
-      {name:'Derek Walsh',    title:'Logistics Analyst',   type:'Personal Leave',        start:'Aug 4, 2025',  end:'Aug 22, 2025', duration:'18 days',  year:2025},
-      {name:'Natalie Ford',   title:'HR Coordinator',      type:'Pregnancy Disability',  start:'Apr 22, 2025', end:'Jul 15, 2025', duration:'84 days',  year:2025},
-      {name:'Roberto Cruz',   title:'Fleet Manager',       type:'FMLA/CFRA',            start:'Mar 3, 2025',  end:'Apr 18, 2025', duration:'46 days',  year:2025},
-      {name:'Yuki Tanaka',    title:'Design Engineer',     type:'Baby Bonding',          start:'Feb 14, 2025', end:'May 9, 2025',  duration:'84 days',  year:2025},
-      {name:'Carlos Mendez',  title:'Assembly Supervisor', type:'FMLA/CFRA',            start:'Jan 6, 2025',  end:'Apr 4, 2025',  duration:'88 days',  year:2025},
-      {name:'Maria Santos',   title:'Assembly Tech',       type:'FMLA/CFRA',            start:'Oct 8, 2024',  end:'Nov 22, 2024', duration:'45 days',  year:2024},
-      {name:'Lisa Park',      title:'Product Manager',     type:'Baby Bonding',          start:'Aug 1, 2024',  end:'Oct 24, 2024', duration:'84 days',  year:2024},
-      {name:'Marcus Webb',    title:'Production Supervisor',type:'FMLA/CFRA',           start:'Jun 12, 2024', end:'Sep 4, 2024',  duration:'84 days',  year:2024},
-      {name:'Diane Osei',     title:'Operations Coord.',   type:'Reproductive Loss',     start:'Mar 5, 2024',  end:'Mar 11, 2024', duration:'5 days',   year:2024},
-    ],
-    onboarding:[
-      {id:'ONB-101',name:'Kira Watts',title:'UX Designer',dept:'Product',start:'May 5, 2026',manager:'David Lee',dayNum:10,tasks:{
-        day1:[{label:'I-9 & tax forms completed',done:true},{label:'Equipment issued',done:true},{label:'Slack & email set up',done:true},{label:'Office tour & team introductions',done:true}],
-        day30:[{label:'Role overview with manager',done:true},{label:'Handbook acknowledgment',done:false},{label:'Benefits enrollment',done:false},{label:'30-day check-in completed',done:false}],
-        day60:[{label:'First project assigned',done:false},{label:'60-day performance conversation',done:false},{label:'Cross-team introductions',done:false}],
-        day90:[{label:'90-day formal review',done:false},{label:'Q3 goals set with manager',done:false},{label:'Role fit confirmed',done:false}]
-      }},
-      {id:'ONB-102',name:'Derrick Olu',title:'Fleet Coordinator',dept:'Logistics',start:'May 12, 2026',manager:'Ana Reyes',dayNum:3,tasks:{
-        day1:[{label:'I-9 & tax forms completed',done:true},{label:'Equipment issued',done:false},{label:'Slack & email set up',done:false},{label:'Office tour & team introductions',done:true}],
-        day30:[{label:'Role overview with manager',done:false},{label:'Handbook acknowledgment',done:false},{label:'Benefits enrollment',done:false},{label:'30-day check-in completed',done:false}],
-        day60:[{label:'First project assigned',done:false},{label:'60-day performance conversation',done:false},{label:'Cross-team introductions',done:false}],
-        day90:[{label:'90-day formal review',done:false},{label:'Q3 goals set with manager',done:false},{label:'Role fit confirmed',done:false}]
-      }},
-    ],
-    offboarding:[
-      {id:'OFF-101',name:'Ramon Castillo',title:'Assembly Technician',dept:'Manufacturing',lastDay:'May 23, 2026',manager:'Carlos Mendez',type:'Voluntary',tasks:[
-        {label:'Resignation letter on file',done:true},
-        {label:'Final paycheck calculated (incl. accrued PTO)',done:true},
-        {label:'Benefits termination notice sent to carrier',done:false},
-        {label:'COBRA notice delivered (required within 44 days)',done:false},
-        {label:'Equipment returned — laptop, badge, keys',done:false},
-        {label:'All system & software access revoked',done:false},
-        {label:'Exit interview completed',done:false},
-        {label:'Final paycheck issued on last day',done:false},
-      ]},
-      {id:'OFF-102',name:'Tanya Morris',title:'QA Engineer',dept:'Engineering',lastDay:'May 30, 2026',manager:'Sarah Kim',type:'Voluntary',tasks:[
-        {label:'Resignation letter on file',done:true},
-        {label:'Final paycheck calculated (incl. accrued PTO)',done:false},
-        {label:'Benefits termination notice sent to carrier',done:false},
-        {label:'COBRA notice delivered (required within 44 days)',done:false},
-        {label:'Equipment returned — laptop, badge, keys',done:false},
-        {label:'All system & software access revoked',done:false},
-        {label:'Exit interview completed',done:false},
-        {label:'Final paycheck issued on last day',done:false},
-      ]},
-    ],
-    policyUpdates:[
-      {id:'PU-101',title:'Updated Remote Work Policy',date:'May 10, 2026',summary:'The remote work policy has been updated to clarify eligibility, equipment reimbursement, and in-office day requirements. All employees should review and acknowledge.',acknowledged:false},
-    ],
-    formerEmployees:[
-      {id:'EMP-0981',first:'Carlos',  last:'Mendez', dept:'Manufacturing',title:'Assembly Supervisor',  empType:'Full-Time', start:'Mar 10, 2019',departed:'Jan 31, 2026',reason:'Voluntary'},
-      {id:'EMP-0974',first:'Derek',   last:'Walsh',  dept:'Logistics',    title:'Logistics Analyst',    empType:'Full-Time', start:'Jun 14, 2021',departed:'Feb 28, 2026',reason:'Voluntary'},
-      {id:'EMP-0992',first:'Natalie', last:'Ford',   dept:'HR',           title:'HR Coordinator',       empType:'Full-Time', start:'Sep 1, 2020',  departed:'Apr 15, 2026',reason:'Voluntary'},
-      {id:'EMP-0968',first:'Yuki',    last:'Tanaka', dept:'Engineering',  title:'Design Engineer',      empType:'Full-Time', start:'Nov 3, 2018',  departed:'Dec 20, 2025',reason:'Voluntary'},
-      {id:'EMP-0955',first:'Roberto', last:'Cruz',   dept:'Logistics',    title:'Fleet Manager',        empType:'Full-Time', start:'Apr 22, 2020', departed:'Nov 30, 2025',reason:'Involuntary'},
-    ],
-    modules:{loa:true,analytics:true,roster:true,assessments:true,compliance:true,onboarding:true,offboarding:true},
-  },
-  meridian: {
-    name:'Meridian Health Group', tagline:'Multi-location Clinic · Los Angeles, CA', icon:'🏥', size:'150 employees',
-    demoHint:'Try <b>Sofia Ramirez / MHG-2041</b>, <b>James Kim / MHG-2042</b>, or <b>Rachel Torres / MHG-2043</b>',
-    loa:[
-      {id:'LOA-2041',name:'Sofia Ramirez',title:'Registered Nurse',type:'Pregnancy Disability',tclass:'pdl',start:'Apr 15',end:'Jul 15',status:'Active',sclass:'sp-active',days:45,urgent:false,
-        timeline:[{step:'Request Received',date:'Apr 12',done:true},{step:'Eligibility Confirmed',note:'PDL — eligible from day 1',date:'Apr 13',done:true},{step:'Medical Cert Received',date:'Apr 14',done:true},{step:'PDL Approved',date:'Apr 15',done:true},{step:'Benefits Continuation',note:'Employee paying share via invoice',date:'Apr 15',done:true},{step:'CFRA Baby Bonding',note:'Eligible to begin July 15 — up to 12 weeks',date:'Jul 15',done:false,active:true}],
-        next:'Send CFRA baby bonding paperwork by July 1. Confirm benefits continue through bonding leave.'},
-      {id:'LOA-2042',name:'James Kim',title:'Medical Assistant',type:'FMLA/CFRA',tclass:'fmla',start:'May 2',end:'Jun 27',status:'Awaiting Cert',sclass:'sp-cert',days:22,urgent:true,
-        timeline:[{step:'Request Received',date:'Apr 30',done:true},{step:'Eligibility Confirmed',date:'May 1',done:true},{step:'FMLA Notice Sent',date:'May 2',done:true},{step:'Medical Certification',note:'Due May 17 — OVERDUE (2 days)',date:'May 17',done:false,active:true},{step:'Leave Approval',date:'TBD',done:false},{step:'Benefits Continuation',date:'TBD',done:false}],
-        next:'Contact employee and healthcare provider immediately. Certification is overdue — document outreach attempts.'},
-      {id:'LOA-2043',name:'Rachel Torres',title:'Front Desk Coord.',type:'Baby Bonding',tclass:'bonding',start:'Mar 20',end:'Jun 11',status:'Active',sclass:'sp-active',days:17,urgent:false,
-        timeline:[{step:'PDL Completed',date:'Mar 19',done:true},{step:'CFRA Paperwork Submitted',date:'Mar 16',done:true},{step:'Baby Bonding Approved',date:'Mar 20',done:true},{step:'Benefits Continuation',date:'Mar 20',done:true},{step:'Return to Work',note:'Confirm return plan with manager',date:'Jun 11',done:false,active:true}],
-        next:'Send return-to-work checklist and schedule return check-in with manager by May 28.'},
-      {id:'LOA-2044',name:'David Chen',title:'Lab Technician',type:'Personal Leave',tclass:'personal',start:'May 8',end:'May 29',status:'Pending Approval',sclass:'sp-pending',days:14,urgent:true,
-        timeline:[{step:'Request Received',date:'May 7',done:true},{step:'HR Review',date:'May 8',done:true},{step:'HR Approval',note:'Awaiting Lab Director sign-off',date:'TBD',done:false,active:true},{step:'Confirm PTO Exhausted',note:'Required before unpaid personal leave',date:'TBD',done:false},{step:'Leave Approved',date:'TBD',done:false}],
-        next:'Follow up with Lab Director for approval. Confirm employee has exhausted all PTO before leave begins.'},
-      {id:'LOA-2045',name:'Priya Mehta',title:'Billing Specialist',type:'FMLA/CFRA',tclass:'fmla',start:'Apr 28',end:'Jun 23',status:'Active',sclass:'sp-active',days:31,urgent:false,
-        timeline:[{step:'Request Received',date:'Apr 25',done:true},{step:'Eligibility Confirmed',date:'Apr 26',done:true},{step:'Medical Cert Received',date:'Apr 27',done:true},{step:'Leave Approved',date:'Apr 28',done:true},{step:'Recertification',note:'Due Jun 1 if leave continues',date:'Jun 1',done:false,active:true},{step:'Return to Work',date:'Jun 23',done:false}],
-        next:'Send recertification reminder by May 25. Confirm return date with billing manager.'},
-      {id:'LOA-2046',name:'Marcus Johnson',title:'Care Coordinator',type:'FMLA/CFRA',tclass:'fmla',start:'May 12',end:'Jun 9',status:'New',sclass:'sp-new',days:25,urgent:false,
-        timeline:[{step:'Request Received',date:'May 11',done:true},{step:'Eligibility Check',note:'Meets 12-month and 1,250-hour requirements',date:'May 12',done:true},{step:'FMLA Notice',note:'Must send within 5 business days',date:'May 15',done:false,active:true},{step:'Medical Certification Due',date:'May 27',done:false},{step:'Leave Approval',date:'TBD',done:false}],
-        next:'Send FMLA Notice of Eligibility by May 15. Certification must be returned within 15 days.'},
-      {id:'LOA-2047',name:'Linda Park',title:'Practice Manager',type:'Reproductive Loss',tclass:'repro',start:'May 13',end:'May 17',status:'Approved',sclass:'sp-approved',days:2,urgent:false,
-        timeline:[{step:'Request Received',date:'May 13',done:true},{step:'Eligibility Confirmed',note:'30+ days employed — eligible',date:'May 13',done:true},{step:'Leave Approved',note:'5 days granted',date:'May 13',done:true},{step:'Return to Work',date:'May 19',done:false,active:true}],
-        next:'Ensure confidentiality. Confirm return on May 19. No additional documentation required.'},
-      {id:'LOA-2048',name:'Carlos Rivera',title:'Medical Assistant',type:'Baby Bonding',tclass:'bonding',start:'Apr 1',end:'Jun 24',status:'Returning',sclass:'sp-returning',days:10,urgent:false,
-        timeline:[{step:'PDL Completed',date:'Mar 31',done:true},{step:'Baby Bonding Approved',date:'Apr 1',done:true},{step:'Benefits Continuation',date:'Apr 1',done:true},{step:'Return-to-Work Form',note:'Must be submitted before return',date:'Jun 22',done:false,active:true},{step:'Return to Work',date:'Jun 24',done:false}],
-        next:'Send return-to-work form by June 18. Schedule re-orientation with clinical supervisor.'},
-    ],
-    roster:[
-      {id:'MHG-2041',first:'Sofia',last:'Ramirez',dept:'Nursing',title:'Registered Nurse',manager:'Dr. Elena Voss',start:'Jan 15, 2021',email:'sofia.ramirez@meridianhealth.com',status:'leave',empType:'Full-Time'},
-      {id:'MHG-2042',first:'James',last:'Kim',dept:'Clinical',title:'Medical Assistant',manager:'Dr. Raj Patel',start:'Mar 8, 2022',email:'james.kim@meridianhealth.com',status:'leave',empType:'Full-Time'},
-      {id:'MHG-2043',first:'Rachel',last:'Torres',dept:'Administration',title:'Front Desk Coord.',manager:'Linda Park',start:'Jun 1, 2023',email:'rachel.torres@meridianhealth.com',status:'leave',empType:'Part-Time'},
-      {id:'MHG-2044',first:'David',last:'Chen',dept:'Laboratory',title:'Lab Technician',manager:'Dr. Angela Wong',start:'Sep 12, 2020',email:'david.chen@meridianhealth.com',status:'leave',empType:'Full-Time'},
-      {id:'MHG-2045',first:'Priya',last:'Mehta',dept:'Billing',title:'Billing Specialist',manager:'Linda Park',start:'Feb 20, 2023',email:'priya.mehta@meridianhealth.com',status:'leave',empType:'Full-Time'},
-      {id:'MHG-2046',first:'Marcus',last:'Johnson',dept:'Clinical',title:'Care Coordinator',manager:'Dr. Raj Patel',start:'Nov 5, 2021',email:'marcus.johnson@meridianhealth.com',status:'leave',empType:'Full-Time'},
-      {id:'MHG-2047',first:'Linda',last:'Park',dept:'Administration',title:'Practice Manager',manager:'CEO',start:'Apr 15, 2018',email:'linda.park@meridianhealth.com',status:'leave',empType:'Full-Time'},
-      {id:'MHG-2048',first:'Carlos',last:'Rivera',dept:'Clinical',title:'Medical Assistant',manager:'Dr. Elena Voss',start:'Jul 8, 2022',email:'carlos.rivera@meridianhealth.com',status:'leave',empType:'Seasonal'},
-      {id:'MHG-2011',first:'Elena',last:'Voss',dept:'Nursing',title:'Nursing Director',manager:'CEO',start:'Mar 1, 2017',email:'elena.voss@meridianhealth.com',status:'active',empType:'Full-Time'},
-      {id:'MHG-2012',first:'Raj',last:'Patel',dept:'Clinical',title:'Medical Director',manager:'CEO',start:'Jun 10, 2016',email:'raj.patel@meridianhealth.com',status:'active',empType:'Full-Time'},
-      {id:'MHG-2013',first:'Angela',last:'Wong',dept:'Laboratory',title:'Lab Director',manager:'CEO',start:'Aug 22, 2018',email:'angela.wong@meridianhealth.com',status:'active',empType:'Full-Time'},
-      {id:'MHG-2014',first:'Thomas',last:'Nguyen',dept:'Nursing',title:'Charge Nurse',manager:'Dr. Elena Voss',start:'Feb 14, 2020',email:'thomas.nguyen@meridianhealth.com',status:'active',empType:'Full-Time'},
-      {id:'MHG-2015',first:'Amara',last:'Osei',dept:'Nursing',title:'LVN',manager:'Dr. Elena Voss',start:'Jan 7, 2022',email:'amara.osei@meridianhealth.com',status:'active',empType:'Full-Time'},
-      {id:'MHG-2016',first:'Kevin',last:'Walsh',dept:'Billing',title:'Billing Manager',manager:'Linda Park',start:'Oct 3, 2019',email:'kevin.walsh@meridianhealth.com',status:'active',empType:'Full-Time'},
-      {id:'MHG-2017',first:'Tanya',last:'Reyes',dept:'Administration',title:'Front Desk Lead',manager:'Linda Park',start:'May 18, 2021',email:'tanya.reyes@meridianhealth.com',status:'active',empType:'Full-Time'},
-      {id:'MHG-2018',first:'Dante',last:'Mills',dept:'Clinical',title:'Patient Coordinator',manager:'Dr. Raj Patel',start:'Mar 30, 2023',email:'dante.mills@meridianhealth.com',status:'active',empType:'Full-Time'},
-      {id:'MHG-2019',first:'Yuki',last:'Sato',dept:'Pharmacy',title:'Pharmacist',manager:'CEO',start:'Sep 12, 2020',email:'yuki.sato@meridianhealth.com',status:'active',empType:'Full-Time'},
-      {id:'MHG-2020',first:'Omar',last:'Hassan',dept:'Pharmacy',title:'Pharmacy Technician',manager:'Yuki Sato',start:'Apr 5, 2022',email:'omar.hassan@meridianhealth.com',status:'active',empType:'Full-Time'},
-      {id:'MHG-2021',first:'Grace',last:'Lee',dept:'Laboratory',title:'Phlebotomist',manager:'Dr. Angela Wong',start:'Jul 19, 2023',email:'grace.lee@meridianhealth.com',status:'active',empType:'Part-Time'},
-      {id:'MHG-2022',first:'Ivan',last:'Petrov',dept:'Administration',title:'Medical Receptionist',manager:'Linda Park',start:'Nov 1, 2023',email:'ivan.petrov@meridianhealth.com',status:'active',empType:'Part-Time'},
-    ],
-    empDir:{
-      'sofia ramirez|mhg-2041':'LOA-2041','james kim|mhg-2042':'LOA-2042','rachel torres|mhg-2043':'LOA-2043',
-      'david chen|mhg-2044':'LOA-2044','priya mehta|mhg-2045':'LOA-2045','marcus johnson|mhg-2046':'LOA-2046',
-      'linda park|mhg-2047':'LOA-2047','carlos rivera|mhg-2048':'LOA-2048',
-    },
-    depts:[
-      {name:'Nursing',        count:42, loa:3},{name:'Clinical',       count:38, loa:3},
-      {name:'Administration', count:22, loa:2},{name:'Laboratory',     count:18, loa:1},
-      {name:'Billing',        count:16, loa:1},{name:'Pharmacy',       count:14, loa:0},
-    ],
-    benefits:[
-      {label:'Medical',           pct:96, enrolled:108, eligible:112, color:'#111111'},
-      {label:'Dental',            pct:91, enrolled:102, eligible:112, color:'#C8A46A'},
-      {label:'401(k)',            pct:85, enrolled:95,  eligible:112, color:'#9C7BB0'},
-      {label:'Vision',            pct:79, enrolled:89,  eligible:112, color:'#6B9080'},
-      {label:'Student Loan Asst', pct:42, enrolled:47,  eligible:112, color:'#C8A46A'},
-      {label:'FSA',               pct:38, enrolled:43,  eligible:112, color:'#D4A5A5'},
-      {label:'EAP',               pct:31, enrolled:35,  eligible:112, color:'#C9DDD0'},
-    ],
-    stats:{
-      loaTotal:'8',  loaCert:'1', loaActive:'4', loaUrgent:'2',
-      loaTotalSub:'2 new this week', loaCertSub:'1 due within 3 days',
-      loaActiveSub:'1 returning this month', loaUrgentSub:'Overdue certifications',
-      kpiEmp:'150', kpiRetention:'91.8%', kpiLeaves:'8', kpiAssessment:'85%',
-      kpiEmpSub:'▲ 6 from last quarter', kpiRetentionSub:'▲ 0.9% vs prior year',
-      kpiLeavesSub:'● 1 overdue certification', kpiAssessmentSub:'▼ 2 overdue this cycle',
-      empTotal:150, empFT:112, empPT:28, empSea:7, empTmp:3,
-    },
-    assessments:[
-      {label:'Administration', pct:95, color:'#C8A46A'},
-      {label:'Billing',        pct:88, color:'#C8A46A'},
-      {label:'Nursing',        pct:82, color:'#C8A46A'},
-      {label:'Laboratory',     pct:74, color:'#D4924A'},
-      {label:'Clinical',       pct:70, color:'#D4924A'},
-      {label:'Pharmacy',       pct:62, color:'#C5566A'},
-    ],
-    attention:[
-      {level:'urgent', name:'James Kim',      issue:'Cert Overdue',       detail:'FMLA certification was due May 17. 2 days overdue.'},
-      {level:'urgent', name:'David Chen',     issue:'Approval Pending',   detail:'Personal leave — Lab Director sign-off not obtained.'},
-      {level:'warn',   name:'Marcus Johnson', issue:'FMLA Notice Due',    detail:'Notice of Eligibility must be sent by May 15.'},
-      {level:'warn',   name:'Carlos Rivera',  issue:'Returning Jun 24',   detail:'Return-to-work form not yet submitted.'},
-      {level:'info',   name:'Sofia Ramirez',  issue:'CFRA Eligible Jul 15', detail:'PDL ends July 15. Baby bonding leave available.'},
-    ],
-    upcoming:[
-      {name:'Marcus Johnson', event:'FMLA Notice Due',   date:'May 15', pill:'Send Notice',    pillClass:'sp-cert'},
-      {name:'James Kim',      event:'Cert Deadline',     date:'May 17', pill:'Follow Up Now',  pillClass:'sp-cert'},
-      {name:'Linda Park',     event:'Return to Work',    date:'May 19', pill:'Confirm Return', pillClass:'sp-returning'},
-      {name:'Carlos Rivera',  event:'Return to Work',    date:'Jun 24', pill:'Send RTW Form',  pillClass:'sp-cert'},
-    ],
-    leaveHistory:[
-      {name:'Diana Flores',   title:'Billing Manager',       type:'Reproductive Loss',    start:'Sep 2, 2025',  end:'Sep 8, 2025',  duration:'5 days',   year:2025},
-      {name:'Robert Kim',     title:'Pharmacy Tech',         type:'FMLA/CFRA',            start:'Jul 7, 2025',  end:'Sep 29, 2025', duration:'84 days',  year:2025},
-      {name:'Amara Osei',     title:'Patient Coordinator',   type:'Baby Bonding',          start:'Mar 17, 2025', end:'Jun 9, 2025',  duration:'84 days',  year:2025},
-      {name:'Kevin Park',     title:'Medical Technologist',  type:'FMLA/CFRA',            start:'Feb 3, 2025',  end:'May 4, 2025',  duration:'90 days',  year:2025},
-      {name:'Elena Cruz',     title:'Charge Nurse',          type:'Pregnancy Disability',  start:'Jan 13, 2025', end:'Apr 7, 2025',  duration:'84 days',  year:2025},
-      {name:'James Kim',      title:'Medical Assistant',     type:'Personal Leave',        start:'Sep 15, 2024', end:'Oct 3, 2024',  duration:'18 days',  year:2024},
-      {name:'Sofia Ramirez',  title:'Registered Nurse',      type:'FMLA/CFRA',            start:'Jun 1, 2024',  end:'Aug 30, 2024', duration:'90 days',  year:2024},
-      {name:'Tanya Reyes',    title:'Front Desk Lead',       type:'Baby Bonding',          start:'Feb 20, 2024', end:'May 14, 2024', duration:'84 days',  year:2024},
-    ],
-    onboarding:[
-      {id:'ONB-201',name:'Camille Brooks',title:'Physical Therapist',dept:'Rehab',start:'May 1, 2026',manager:'Dr. Elena Voss',dayNum:14,tasks:{
-        day1:[{label:'Credentialing paperwork submitted',done:true},{label:'Badge & system access issued',done:true},{label:'HIPAA training completed',done:true},{label:'Department orientation',done:true}],
-        day30:[{label:'Preceptor sign-off received',done:true},{label:'First schedule finalized',done:false},{label:'Benefits enrollment confirmed',done:true},{label:'30-day check-in with manager',done:false}],
-        day60:[{label:'Independent patient caseload',done:false},{label:'60-day clinical evaluation',done:false},{label:'Peer introductions complete',done:false}],
-        day90:[{label:'90-day performance review',done:false},{label:'Licensure verification on file',done:false},{label:'Q3 goals set',done:false}]
-      }},
-    ],
-    offboarding:[
-      {id:'OFF-201',name:'Patrick Huang',title:'Lab Technician',dept:'Clinical Lab',lastDay:'May 29, 2026',manager:'Dr. Raj Patel',type:'Voluntary',tasks:[
-        {label:'Resignation letter on file',done:true},
-        {label:'Final paycheck calculated (incl. accrued PTO)',done:true},
-        {label:'Credentials & certifications removed from system',done:false},
-        {label:'COBRA notice delivered (required within 44 days)',done:false},
-        {label:'Equipment returned — badge, pager, access card',done:false},
-        {label:'EMR and all system access revoked',done:false},
-        {label:'Exit interview completed',done:false},
-        {label:'Final paycheck issued on last day',done:false},
-      ]},
-    ],
-    policyUpdates:[
-      {id:'PU-201',title:'Updated HIPAA Confidentiality Policy',date:'May 8, 2026',summary:'The HIPAA confidentiality policy has been updated to reflect new state requirements for patient data handling. All clinical and administrative staff must read and acknowledge.',acknowledged:false},
-    ],
-    formerEmployees:[
-      {id:'MHG-1941',first:'Diana',  last:'Flores', dept:'Billing',   title:'Billing Manager',      empType:'Full-Time', start:'Feb 1, 2019',  departed:'Oct 15, 2025',reason:'Voluntary'},
-      {id:'MHG-1952',first:'Kevin',  last:'Park',   dept:'Laboratory',title:'Medical Technologist', empType:'Full-Time', start:'May 8, 2020',  departed:'Nov 5, 2025', reason:'Voluntary'},
-      {id:'MHG-1967',first:'Elena',  last:'Cruz',   dept:'Nursing',   title:'Charge Nurse',         empType:'Full-Time', start:'Aug 20, 2018', departed:'Jan 31, 2026',reason:'Involuntary'},
-    ],
-    modules:{loa:true,analytics:true,roster:true,assessments:true,compliance:true,onboarding:false,offboarding:false},
-  },
-};
+// ══ COMPANY DATA STORE ══
+// Companies are loaded from Supabase on login via loadCompanyFromDB()
+const COMPANIES = {};
 
-let currentCompany = 'Crestline';
-let leaveHistoryData = COMPANIES.Crestline.leaveHistory;
+let currentCompany = null;
+let leaveHistoryData = [];
 
 function loadCompany(id) {
   currentCompany = id;
@@ -3561,19 +3212,6 @@ function loadCompany(id) {
   analyticsData.benefits = co.benefits;
   // update company name displays
   document.querySelectorAll('.company-name-display').forEach(el => el.textContent = co.name);
-  // update admin demo card highlights
-  ['Crestline','meridian'].forEach(c => {
-    const el = document.getElementById('demo-co-'+c);
-    if (!el) return;
-    el.style.border = c===id ? '2px solid var(--navy)' : '2px solid var(--border)';
-    el.style.background = c===id ? 'var(--green-bg)' : '';
-  });
-  // update login hint
-  const hint = document.getElementById('loginDemoHint');
-  if (hint) hint.innerHTML = co.demoHint;
-  // update employee ID placeholder
-  const empIdInput = document.getElementById('loginEmpId');
-  if (empIdInput) empIdInput.placeholder = id === 'meridian' ? 'Employee ID  (e.g. MHG-2041)' : 'Employee ID  (e.g. EMP-1041)';
   // update stat cards
   const s = co.stats;
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
@@ -4141,7 +3779,7 @@ function saveNewHire() {
   const idPrefix = isMer ? 'MHG-' : 'EMP-';
   const idBase   = isMer ? 2100 : 1049;
   const newEmpId = idPrefix + (idBase + rosterData.length);
-  const domain = isMer ? 'meridianhealth.com' : 'crestlinemfg.com';
+  const domain = coCtx().domain;
   rosterData.push({ id:newEmpId, first, last, dept:dept||'General', title, manager:manager||'—', start:startFormatted,
     email:`${first.toLowerCase()}.${last.toLowerCase()}@${domain}`, status:'new', empType });
   filterRoster();
@@ -4524,7 +4162,7 @@ const catMeta = {
 };
 
 let docLibData = [
-  {id:'doc-1', name:'Employee Handbook 2025', cat:'handbook', uploaded:'Nov 12, 2025', vis:'All Employees', size:'2.4 MB', file:'Crestline_Handbook_2025.docx'},
+  {id:'doc-1', name:'Employee Handbook 2025', cat:'handbook', uploaded:'Nov 12, 2025', vis:'All Employees', size:'2.4 MB', file:'Employee_Handbook_2025.docx'},
   {id:'doc-2', name:'FMLA / CFRA Policy Guide', cat:'policy', uploaded:'Jan 8, 2026', vis:'All Employees', size:'540 KB', file:'FMLA_Policy_Guide.pdf'},
   {id:'doc-3', name:'Open Enrollment Benefits Summary', cat:'benefits', uploaded:'Oct 30, 2025', vis:'All Employees', size:'1.1 MB', file:'Benefits_OE_2026.pdf'},
   {id:'doc-4', name:'Workplace Safety Handbook', cat:'safety', uploaded:'Mar 3, 2026', vis:'All Employees', size:'890 KB', file:'Safety_Handbook.pdf'},
@@ -5427,17 +5065,8 @@ function eaSubmitAssess(){
 // ══ LOGIN / ROUTING ══
 let currentEmployee = null;
 
-// Employee lookup table — maps name+ID to their LOA record
-let empDirectory = {
-  'maria santos|emp-1041':  'LOA-1041',
-  'tom chen|emp-1042':      'LOA-1042',
-  'lisa park|emp-1043':     'LOA-1043',
-  'james okafor|emp-1044':  'LOA-1044',
-  'priya nair|emp-1045':    'LOA-1045',
-  'anika patel|emp-1046':   'LOA-1046',
-  'marcus webb|emp-1047':   'LOA-1047',
-  'diana reyes|emp-1048':   'LOA-1048',
-};
+// Employee lookup table — built from roster + LOA records on login
+let empDirectory = {};  // populated via buildEmpDir() in loadCompanyFromDB()
 
 function showHrLogin() {
   document.getElementById('empLoginCard').style.display = 'none';
@@ -5454,36 +5083,15 @@ function empLogin() {
   const id = (document.getElementById('loginEmpId').value || '').trim();
   if (!fn || !ln) { showToast('Please enter your name', 'First and last name are required.', 'warn'); return; }
 
-  // Auto-detect company from employee ID prefix, then fall back to searching all companies
+  // Search the current company's employee directory
   const idLower = id.toLowerCase();
-  let detectedCompany = currentCompany;
-  if (idLower.startsWith('mhg-')) detectedCompany = 'meridian';
-  else if (idLower.startsWith('emp-')) detectedCompany = 'Crestline';
-
-  // If a different company was detected, switch to it silently
-  if (detectedCompany !== currentCompany) loadCompany(detectedCompany);
-
   const nameKey = `${fn} ${ln}`.toLowerCase();
   const fullKey = `${nameKey}|${idLower}`;
 
-  // Search current company first, then all companies as fallback
   let loaId = empDirectory[fullKey] || null;
   if (!loaId) {
     const match = Object.keys(empDirectory).find(k => k.split('|')[0] === nameKey);
     if (match) loaId = empDirectory[match];
-  }
-  if (!loaId) {
-    // Last resort: search every company's directory
-    for (const coId of Object.keys(COMPANIES)) {
-      if (coId === currentCompany) continue;
-      const dir = COMPANIES[coId].empDir;
-      loaId = dir[fullKey] || null;
-      if (!loaId) {
-        const m = Object.keys(dir).find(k => k.split('|')[0] === nameKey);
-        if (m) loaId = dir[m];
-      }
-      if (loaId) { loadCompany(coId); break; }
-    }
   }
 
   if (!loaId && !fn) { showToast('Employee not found', 'Check your name and employee ID and try again.', 'warn'); return; }
@@ -5552,16 +5160,14 @@ async function loginAs(role) {
 
 function finishLogin(role, company) {
   userRole = role;
-  // Normalize legacy/old company keys to current keys
-  const companyNorm = {'Endera':'Crestline','endera':'Crestline','endera motors':'Crestline'};
-  const resolvedCompany = companyNorm[company] || company || 'Crestline';
-  // Safety: if company key still not found, fall back to first available
-  const safeCompany = COMPANIES[resolvedCompany] ? resolvedCompany : Object.keys(COMPANIES)[0];
+  // Find the company — use the slug as-is (production always uses DB slugs)
+  const safeCompany = COMPANIES[company] ? company : Object.keys(COMPANIES)[0];
+  if (!safeCompany) { showToast('No company loaded', 'Contact HR Smart support.', 'error'); return; }
   loadCompany(safeCompany);
-  // Set demo session name if not already set via Supabase loginAs()
+  // Set session name if not already set via Supabase loginAs()
   if (!currentSessionName) {
     const coName = COMPANIES[safeCompany]?.name || safeCompany;
-    currentSessionName = role === 'admin' ? 'HR Smart (Demo Admin)' : coName + ' (Client Portal)';
+    currentSessionName = role === 'admin' ? 'HR Smart Admin' : coName + ' (Client Portal)';
   }
   document.getElementById('login-screen').style.display = 'none';
   const shell = document.getElementById('hr-shell');
@@ -5849,6 +5455,12 @@ async function loadAllClients() {
   if (sel) {
     sel.innerHTML = data.map(c => `<option value="${c.slug}">${c.icon||'🏢'} ${c.name}</option>`).join('');
   }
+  // Show the company picker in admin mode
+  const pickerWrap = document.getElementById('companyPickerWrap');
+  if (pickerWrap) pickerWrap.style.display = '';
+  // Populate modules company select
+  const modSel = document.getElementById('modulesCompanySelect');
+  if (modSel) modSel.innerHTML = data.map(c => `<option value="${c.slug}">${c.icon||'🏢'} ${c.name}</option>`).join('');
   // Update admin demo cards
   const demoArea = document.getElementById('adminDemoCards');
   if (demoArea) {
