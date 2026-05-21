@@ -3994,6 +3994,8 @@ async function pickCompany(id) {
     COMPANIES[id] = coData;
   }
   loadCompany(id);
+  // Switch to LOA dashboard after picking a client
+  showView('dashboard');
 }
 
 // ── ADMIN TABS ──
