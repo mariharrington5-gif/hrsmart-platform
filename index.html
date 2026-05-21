@@ -2660,50 +2660,12 @@ function efReset(){
 
 // ── ANALYTICS ──
 const analyticsData = {
-  loa: {
-    months:  ['Jan','Feb','Mar','Apr','May'],
-    ytd:     [8, 10, 9, 11, 12],
-    q2:      [null, null, null, 11, 12],
-    q1:      [8, 10, 9, null, null],
-  },
-  status: [
-    {label:'Active',       count:7,  color:'#C8A46A'},
-    {label:'Awaiting Cert',count:2,  color:'#D4924A'},
-    {label:'Pending',      count:2,  color:'#9C7BB0'},
-    {label:'Returning',    count:1,  color:'#111111'},
-  ],
-  byType: [
-    {label:'FMLA / CFRA',         count:5, max:12, color:'#111111'},
-    {label:'Pregnancy Disability', count:2, max:12, color:'#9C7BB0'},
-    {label:'Baby Bonding',         count:2, max:12, color:'#C8A46A'},
-    {label:'Personal Leave',       count:2, max:12, color:'#C8A46A'},
-    {label:'Reproductive Loss',    count:1, max:12, color:'#D4A5A5'},
-  ],
-  departments: [
-    {name:'Engineering',   count:68, loa:3, health:'green'},
-    {name:'Operations',    count:54, loa:4, health:'amber'},
-    {name:'Product',       count:31, loa:2, health:'green'},
-    {name:'Manufacturing', count:49, loa:2, health:'green'},
-    {name:'HR & Admin',    count:18, loa:1, health:'green'},
-    {name:'Logistics',     count:27, loa:0, health:'green'},
-  ],
-  assessments: [
-    {label:'HR & Admin',    pct:100, color:'#C8A46A'},
-    {label:'Operations',    pct:91,  color:'#C8A46A'},
-    {label:'Engineering',   pct:82,  color:'#C8A46A'},
-    {label:'Logistics',     pct:74,  color:'#D4924A'},
-    {label:'Product',       pct:67,  color:'#D4924A'},
-    {label:'Manufacturing', pct:58,  color:'#C5566A'},
-  ],
-  benefits: [
-    {label:'Medical',  pct:94, enrolled:158, eligible:168, color:'#111111'},
-    {label:'Dental',   pct:89, enrolled:150, eligible:168, color:'#C8A46A'},
-    {label:'401(k)',   pct:88, enrolled:148, eligible:168, color:'#9C7BB0'},
-    {label:'Vision',   pct:76, enrolled:128, eligible:168, color:'#6B9080'},
-    {label:'HSA',      pct:61, enrolled:103, eligible:168, color:'#C8A46A'},
-    {label:'FSA',      pct:34, enrolled:57,  eligible:168, color:'#D4A5A5'},
-    {label:'EAP',      pct:28, enrolled:47,  eligible:168, color:'#C9DDD0'},
-  ],
+  loa:         { months:[], ytd:[], q2:[], q1:[] },
+  status:      [],
+  byType:      [],
+  departments: [],
+  assessments: [],
+  benefits:    [],
 };
 
 function renderAnalytics() {
@@ -3208,8 +3170,12 @@ function loadCompany(id) {
   }
   rosterData = co.roster;
   empDirectory = co.empDir;
-  analyticsData.departments = co.depts;
-  analyticsData.benefits = co.benefits;
+  analyticsData.departments = co.depts        || [];
+  analyticsData.benefits    = co.benefits     || [];
+  analyticsData.assessments = co.assessments  || [];
+  analyticsData.loa         = co.analyticsLoa || { months:[], ytd:[], q2:[], q1:[] };
+  analyticsData.status      = co.analyticsStatus  || [];
+  analyticsData.byType      = co.analyticsByType  || [];
   // update company name displays
   document.querySelectorAll('.company-name-display').forEach(el => el.textContent = co.name);
   // update stat cards
