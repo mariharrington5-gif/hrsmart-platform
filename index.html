@@ -861,8 +861,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
           <table class="loa-table">
             <thead><tr><th>Employee</th><th>Event</th><th>Date</th><th>Action</th></tr></thead>
             <tbody id="upcomingTbody">
-              <tr><td><div class="emp-name">Lisa Park</div></td><td>PDL Ends → CFRA Starts</td><td>June 1</td><td><span class="status-pill sp-pending">Notify & Confirm</span></td></tr>
-              <tr><td><div class="emp-name">Anika Patel</div></td><td>Leave Ends</td><td>June 5</td><td><span class="status-pill sp-returning">Confirm Return</span></td></tr>
               <tr><td><div class="emp-name">Marcus Webb</div></td><td>Cert Renewal Due</td><td>May 30</td><td><span class="status-pill sp-cert">Send Reminder</span></td></tr>
             </tbody>
           </table>
@@ -4775,18 +4773,7 @@ function doLaunch(){
 }
 
 // Tracker
-const tData=[
-  {n:'Sarah Kim',ti:'Software Engineer',a:'90-Day Review',due:'May 22',pct:80,st:'In Progress',sc:'sp-pending'},
-  {n:'Marcus Webb',ti:'Prod. Supervisor',a:'Annual Review',due:'May 30',pct:100,st:'Completed',sc:'sp-approved'},
-  {n:'Diana Reyes',ti:'Logistics Coord.',a:'30-Day Check-In',due:'May 15',pct:0,st:'Overdue',sc:'sp-cert'},
-  {n:'Priya Nair',ti:'Software Engineer',a:'90-Day Review',due:'May 22',pct:60,st:'In Progress',sc:'sp-pending'},
-  {n:'Tom Chen',ti:'QA Engineer',a:'Annual Review',due:'May 30',pct:100,st:'Completed',sc:'sp-approved'},
-  {n:'James Okafor',ti:'Fleet Tech',a:'90-Day Review',due:'May 22',pct:30,st:'In Progress',sc:'sp-pending'},
-  {n:'Anika Patel',ti:'HR Coordinator',a:'Annual Review',due:'May 30',pct:100,st:'Completed',sc:'sp-approved'},
-  {n:'Lisa Park',ti:'Product Manager',a:'90-Day Review',due:'May 22',pct:0,st:'Overdue',sc:'sp-cert'},
-  {n:'Maria Santos',ti:'Assembly Tech',a:'30-Day Check-In',due:'May 20',pct:45,st:'In Progress',sc:'sp-pending'},
-  {n:'Robert Torres',ti:'Fleet Tech',a:'Annual Review',due:'May 30',pct:100,st:'Completed',sc:'sp-approved'},
-];
+const tData = [];  // populated from company assessments data
 
 function renderTracker(f){
   const rows=f==='all'?tData:tData.filter(r=>f==='completed'?r.pct===100:f==='overdue'?r.st==='Overdue':r.pct>0&&r.pct<100);
