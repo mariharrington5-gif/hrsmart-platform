@@ -814,13 +814,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <div style="display:flex;flex-direction:column;gap:16px">
         <div class="card">
           <div class="card-head"><div class="card-title">⚠️ Needs Attention</div></div>
-          <div class="alerts-list" id="alertsList">
-            <div class="alert-item urgent"><div class="alert-icon">🔴</div><div class="alert-text"><strong>Maria Santos – Cert Overdue</strong><span>FMLA certification was due May 10. 4 days overdue.</span></div></div>
-            <div class="alert-item urgent"><div class="alert-icon">🔴</div><div class="alert-text"><strong>James Okafor – No Response</strong><span>Requested leave 8 days ago. No employee contact.</span></div></div>
-            <div class="alert-item warn"><div class="alert-icon">🟡</div><div class="alert-text"><strong>Priya Nair – Cert Due in 2 Days</strong><span>Medical cert deadline: May 16.</span></div></div>
-            <div class="alert-item warn"><div class="alert-icon">🟡</div><div class="alert-text"><strong>Tom Chen – Returning May 20</strong><span>Return-to-work form not yet received.</span></div></div>
-            <div class="alert-item info"><div class="alert-icon">🔵</div><div class="alert-text"><strong>Lisa Park – CFRA Eligible</strong><span>PDL ends June 1. CFRA baby bonding available.</span></div></div>
-          </div>
+          <div class="alerts-list" id="alertsList"></div>
         </div>
 
         <div class="card">
@@ -867,7 +861,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
           <table class="loa-table">
             <thead><tr><th>Employee</th><th>Event</th><th>Date</th><th>Action</th></tr></thead>
             <tbody id="upcomingTbody">
-              <tr><td><div class="emp-name">Tom Chen</div></td><td>Return to Work</td><td>May 20</td><td><span class="status-pill sp-cert">Get RTW Form</span></td></tr>
               <tr><td><div class="emp-name">Lisa Park</div></td><td>PDL Ends → CFRA Starts</td><td>June 1</td><td><span class="status-pill sp-pending">Notify & Confirm</span></td></tr>
               <tr><td><div class="emp-name">Anika Patel</div></td><td>Leave Ends</td><td>June 5</td><td><span class="status-pill sp-returning">Confirm Return</span></td></tr>
               <tr><td><div class="emp-name">Marcus Webb</div></td><td>Cert Renewal Due</td><td>May 30</td><td><span class="status-pill sp-cert">Send Reminder</span></td></tr>
