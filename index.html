@@ -701,7 +701,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <div class="elc-desc">Sign in to view your benefits, check your leave status, and access company documents.</div>
     <input class="emp-login-input" id="loginFirstName" type="text" placeholder="First name" onkeydown="if(event.key==='Enter')empLogin()"/>
     <input class="emp-login-input" id="loginLastName" type="text" placeholder="Last name" onkeydown="if(event.key==='Enter')empLogin()"/>
-    <input class="emp-login-input" id="loginEmpId" type="text" placeholder="Employee ID  (e.g. EMP-1041)" onkeydown="if(event.key==='Enter')empLogin()"/>
+    <input class="emp-login-input" id="loginEmpId" type="text" placeholder="Employee ID" onkeydown="if(event.key==='Enter')empLogin()"/>
     <button class="emp-login-btn" onclick="empLogin()">Sign In →</button>
     <div class="login-demo-hint" id="loginDemoHint" style="display:none"></div>
   </div>
@@ -744,7 +744,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 <div id="hr-shell">
 <div class="topbar">
   <div class="logo">HR <span>Smart</span></div>
-  <div class="company-badge company-name-display">Crestline Manufacturing</div>
+  <div class="company-badge company-name-display">—</div>
   <div class="topbar-nav">
     <button class="tnav active" data-module="analytics" onclick="showView('analytics')">📈 Analytics</button>
     <button class="tnav" data-module="loa" onclick="showView('dashboard')">📋 LOA Dashboard</button>
@@ -3746,9 +3746,8 @@ function saveNewHire() {
   const nameParts = name.trim().split(/\s+/);
   const first = nameParts[0], last = nameParts.slice(1).join(' ') || '';
   const co = COMPANIES[currentCompany];
-  const isMer = co.name.toLowerCase().includes('meridian');
-  const idPrefix = isMer ? 'MHG-' : 'EMP-';
-  const idBase   = isMer ? 2100 : 1049;
+  const idPrefix = co.id_prefix || 'EMP-';
+  const idBase   = co.id_base   || 1000;
   const newEmpId = idPrefix + (idBase + rosterData.length);
   const domain = coCtx().domain;
   rosterData.push({ id:newEmpId, first, last, dept:dept||'General', title, manager:manager||'—', start:startFormatted,
@@ -5240,6 +5239,8 @@ async function loadCompanyFromDB(slug) {
     offboarding:    data.offboarding      || [],
     policyUpdates:  data.policy_updates   || [],
     modules:        data.modules          || {loa:true,analytics:true,roster:true,assessments:true,compliance:true,onboarding:true,offboarding:true},
+    id_prefix:      data.id_prefix        || 'EMP-',
+    id_base:        data.id_base          || 1000,
   };
 }
 
@@ -5357,6 +5358,8 @@ function showClientWizard() {
           <input id="wz-email" class="emp-login-input" style="margin:0" type="email" placeholder="hr@company.com"/></div>
           <div><label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Company Slug (URL key) *</label>
           <input id="wz-slug" class="emp-login-input" style="margin:0" placeholder="acme-corp" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/></div>
+          <div><label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Employee ID Prefix</label>
+          <input id="wz-idprefix" class="emp-login-input" style="margin:0" placeholder="EMP-" oninput="this.value=this.value.toUpperCase()"/></div>
         </div>
         <div>
           <label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">Modules</label>
@@ -5385,6 +5388,7 @@ async function saveClientWizard() {
   const ft     = parseInt(document.getElementById('wz-ft')?.value)    || 0;
   const pt     = parseInt(document.getElementById('wz-pt')?.value)    || 0;
   if (!name || !slug || !email) { showToast('Missing info','Company name, slug, and HR email are required.','warn'); return; }
+  const idPrefix = (document.getElementById('wz-idprefix')?.value.trim() || 'EMP-').toUpperCase();
   const mods = {};
   document.querySelectorAll('#wz-modules input[data-mod]').forEach(cb => { mods[cb.dataset.mod] = cb.checked; });
   const record = {
@@ -5393,6 +5397,8 @@ async function saveClientWizard() {
     icon:           '🏢',
     size:           total + ' employees',
     hr_email:       email,
+    id_prefix:      idPrefix,
+    id_base:        1000,
     loa_cases:      [],
     roster:         [],
     former_employees:[],
