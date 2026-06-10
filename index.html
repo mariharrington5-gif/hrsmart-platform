@@ -5615,7 +5615,9 @@ async function sendClientInvite(slug, clientName) {
 _sb.auth.getSession().then(async ({ data: { session } }) => {
   if (!session) return;
   // If arriving from a password reset or invite link, show set-password form instead of auto-login
-  const urlType = new URLSearchParams(window.location.hash.substring(1)).get('type');
+  const _hashP = new URLSearchParams(window.location.hash.substring(1));
+  const _searchP = new URLSearchParams(window.location.search);
+  const urlType = _hashP.get('type') || _searchP.get('type');
   if (urlType === 'recovery' || urlType === 'invite') {
     showSetPasswordScreen();
     return;
