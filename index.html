@@ -3437,6 +3437,9 @@ function toggleModule(companyId, moduleKey, enabled) {
   if (statusEl) { statusEl.textContent = enabled ? 'Active' : 'Off'; statusEl.style.color = enabled ? 'var(--green)' : 'var(--muted)'; }
   // if toggling for current company, apply immediately
   if (companyId === currentCompany) applyModules(companyId);
+  // persist to DB
+  _sb.from('companies').update({ modules: COMPANIES[companyId].modules }).eq('slug', companyId)
+    .then(({ error }) => { if (error) showToast('Save failed', error.message, 'error'); });
   showToast(enabled ? 'Module enabled' : 'Module disabled', MODULE_META[moduleKey]?.label + ' for ' + COMPANIES[companyId].name, enabled ? '' : 'warn');
 }
 
