@@ -5298,6 +5298,7 @@ function finishLogin(role, company) {
   renderAnalytics();
   renderAttention(COMPANIES[safeCompany].attention);
   renderUpcoming(COMPANIES[safeCompany].upcoming);
+  renderPendingEmails();
 }
 
 async function logout() {
