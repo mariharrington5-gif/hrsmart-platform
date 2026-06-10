@@ -1864,6 +1864,31 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
             </div>
           </div>
           <button class="gen-btn" style="margin-top:16px;width:fit-content" onclick="showToast('Settings saved','Notification preferences and API key have been saved.')">💾 Save Settings</button>
+
+          <!-- SendGrid Email Delivery -->
+          <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+            <div style="font-size:.84rem;font-weight:700;color:var(--text);margin-bottom:14px">📧 Email Delivery (SendGrid)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div>
+                <div style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">From Name</div>
+                <input type="text" id="sgFromName" placeholder="HR Smart" oninput="localStorage.setItem('hrsmart_sg_from_name',this.value)" style="padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:.87rem;width:100%;outline:none;color:var(--text)"/>
+              </div>
+              <div>
+                <div style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">From Email (Verified in SendGrid)</div>
+                <input type="email" id="sgFromEmail" placeholder="hr@yourfirm.com" oninput="localStorage.setItem('hrsmart_sg_from',this.value)" style="padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:.87rem;width:100%;outline:none;color:var(--text)"/>
+                <div style="font-size:.72rem;color:var(--muted);margin-top:4px">Must match a verified sender in your SendGrid account.</div>
+              </div>
+            </div>
+            <div id="sgStatus" style="font-size:.77rem;margin-top:12px;padding:10px 14px;border-radius:8px;background:#f0fdf4;border:1px solid #86efac;color:#166534;display:none">✅ Email delivery active — approved drafts will be sent via SendGrid.</div>
+            <div style="font-size:.76rem;color:var(--muted);margin-top:10px;background:#f8fafc;border-radius:8px;padding:12px 14px;border:1px solid var(--border);line-height:1.6">
+              <strong>Setup (one-time):</strong><br>
+              1. Create a free account at <a href="https://sendgrid.com" target="_blank" style="color:var(--navy)">sendgrid.com</a><br>
+              2. Verify your from email (Settings → Sender Authentication → Single Sender)<br>
+              3. Create an API key (Settings → API Keys → Restricted → Mail Send only)<br>
+              4. In your Supabase dashboard → Settings → Secrets → add <code style="background:#e2e8f0;padding:1px 5px;border-radius:4px">SENDGRID_API_KEY</code><br>
+              5. In Supabase → Edge Functions → deploy the <code style="background:#e2e8f0;padding:1px 5px;border-radius:4px">send-email</code> function (see instructions below)
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -2122,7 +2147,9 @@ function sendFollowupEmail(){
     const preview = body.substring(0, 160) + (body.length > 160 ? '…' : '');
     pendingEmailApprovals.push({
       subject: subj,
+      body: body,
       preview: preview,
+      to: to,
       formsNote: formNames ? `📎 Forms attached: ${formNames}` : '',
       attachedForms: [...emailAttachedForms],
       name: empName,
@@ -2460,7 +2487,8 @@ async function generateEmailDraft() {
     const subject = subjectMatch ? subjectMatch[1].trim() : 'Weekly LOA Status Summary';
     // push to pending approval queue
     pendingEmailApprovals.push({
-      subject, preview: text.substring(0,180)+'…',
+      subject, body: text, preview: text.substring(0,180)+'…',
+      to: COMPANIES[currentCompany]?.hrEmail || coCtx().email,
       name:'Leadership', type:'Weekly Summary', caseId:'summary',
     });
     renderPendingEmails();
@@ -5283,40 +5311,29 @@ window.rejectEmail = function(i) { _origRejectEmail(i); dbSavePendingEmails(); }
 const _origSendFollowupEmail = sendFollowupEmail;
 window.sendFollowupEmail = function() { _origSendFollowupEmail(); dbSavePendingEmails(); };
 
-// ── REAL EMAIL via SendGrid ──
-// Set your SendGrid API key in Supabase → Settings → Edge Functions or store in company settings
-const SENDGRID_KEY = localStorage.getItem('hrsmart_sg_key') || '';
-
+// ── REAL EMAIL via Supabase Edge Function → SendGrid ──
+// API key lives in Supabase secrets (SENDGRID_API_KEY), never in the browser.
 async function sendRealEmail({ to, cc, subject, body, fromName }) {
-  if (!SENDGRID_KEY) {
-    console.warn('No SendGrid key configured — email not sent');
-    return false;
-  }
+  const fromEmail = localStorage.getItem('hrsmart_sg_from') || coCtx().email;
+  const fromDisplayName = fromName || localStorage.getItem('hrsmart_sg_from_name') || 'HR Smart';
   try {
-    const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + SENDGRID_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        personalizations: [{ to: [{ email: to }], cc: cc ? [{ email: cc }] : undefined }],
-        from: { email: coCtx().email, name: fromName || 'HR Smart' },
-        subject,
-        content: [{ type: 'text/plain', value: body }],
-      }),
+    const { error } = await _sb.functions.invoke('send-email', {
+      body: { to, cc, subject, body, fromEmail, fromName: fromDisplayName }
     });
-    return res.ok;
+    if (error) { console.warn('SendGrid edge fn error:', error); return false; }
+    return true;
   } catch(e) { console.warn('SendGrid error:', e); return false; }
 }
 
-// Override approveEmail to actually send when a real key is present
+// Override approveEmail to actually send via Edge Function when configured
 const _origApproveEmailReal = window.approveEmail;
 window.approveEmail = function(i) {
   const e = pendingEmailApprovals[i];
-  if (e && SENDGRID_KEY) {
+  const fromEmail = localStorage.getItem('hrsmart_sg_from');
+  if (e && fromEmail) {
     const to = e.to || (e.name.toLowerCase().replace(/\s+/g,'.') + '@' + coCtx().domain);
-    sendRealEmail({ to, cc: coCtx().email, subject: e.subject, body: e.preview + (e.formsNote ? '\n\n' + e.formsNote : '') })
+    const fullBody = (e.body || e.preview) + (e.formsNote ? '\n\n' + e.formsNote : '');
+    sendRealEmail({ to, cc: coCtx().email, subject: e.subject, body: fullBody })
       .then(sent => { if (sent) showToast('Email Sent ✓', `"${e.subject}" delivered to ${e.name}.`); });
   }
   _origApproveEmailReal(i);
@@ -5452,13 +5469,25 @@ async function loadAllClients() {
   }
 }
 
-// ── SENDGRID KEY MANAGEMENT ──
-function saveSendGridKey() {
-  const key = document.getElementById('sgKeyInput')?.value.trim();
-  if (!key) return;
-  localStorage.setItem('hrsmart_sg_key', key);
-  showToast('SendGrid Key Saved ✓', 'Email sending is now active for approved drafts.');
+// ── SENDGRID STATUS INDICATOR ──
+function refreshSgStatus() {
+  const el = document.getElementById('sgStatus');
+  if (!el) return;
+  const hasFrom = !!localStorage.getItem('hrsmart_sg_from');
+  el.style.display = hasFrom ? 'block' : 'none';
 }
+// Pre-fill saved values when notifications panel opens
+const _origAdminTab = adminTab;
+window.adminTab = function(t, btn) {
+  _origAdminTab(t, btn);
+  if (t === 'notifications') {
+    const fn = document.getElementById('sgFromName');
+    const fe = document.getElementById('sgFromEmail');
+    if (fn) fn.value = localStorage.getItem('hrsmart_sg_from_name') || '';
+    if (fe) fe.value = localStorage.getItem('hrsmart_sg_from') || '';
+    refreshSgStatus();
+  }
+};
 
 // ── AUTO-LOGIN (page refresh) ──
 _sb.auth.getSession().then(async ({ data: { session } }) => {
