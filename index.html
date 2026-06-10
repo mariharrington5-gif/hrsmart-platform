@@ -814,6 +814,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
         <div class="card-head">
           <div class="card-title">All LOA Requests</div>
           <div style="display:flex;gap:8px">
+            <button onclick="showAddCaseModal()" style="background:var(--navy);color:#fff;border:none;border-radius:7px;padding:6px 14px;font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer">+ Add Case</button>
             <select style="font-size:.78rem;padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);font-family:'Inter',sans-serif" onchange="filterTable(this.value)">
               <option value="all">All Status</option>
               <option value="new">New</option>
@@ -2216,6 +2217,89 @@ window.hrPending = window.hrPending || [];
 
 // ── LOA DATA ──
 let loaData = [];  // populated from Supabase on login
+
+// ── ADD CASE MANUALLY ──
+function showAddCaseModal() {
+  const existing = document.getElementById('addCaseModal');
+  if (existing) { existing.classList.add('open'); return; }
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'addCaseModal';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:var(--r);width:min(520px,96vw);max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.18);padding:28px 32px">
+      <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;color:var(--navy);margin-bottom:18px">Add LOA Case</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div>
+          <div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Employee Name</div>
+          <input id="acName" class="emp-login-input" style="margin:0" placeholder="Jane Smith"/>
+        </div>
+        <div>
+          <div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Employee Email</div>
+          <input id="acEmail" type="email" class="emp-login-input" style="margin:0" placeholder="jane@company.com"/>
+        </div>
+        <div>
+          <div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Leave Type</div>
+          <select id="acType" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:.87rem;color:var(--text);background:#fff;outline:none">
+            <option value="FMLA">FMLA</option>
+            <option value="Medical">Medical</option>
+            <option value="Parental">Parental</option>
+            <option value="Personal">Personal</option>
+            <option value="Workers Comp">Workers Comp</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Status</div>
+          <select id="acStatus" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:.87rem;color:var(--text);background:#fff;outline:none">
+            <option value="new">New</option>
+            <option value="pending">Pending Approval</option>
+            <option value="approved">Approved</option>
+            <option value="active">Active</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Start Date</div>
+          <input id="acStart" type="date" class="emp-login-input" style="margin:0"/>
+        </div>
+        <div>
+          <div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Return Date</div>
+          <input id="acReturn" type="date" class="emp-login-input" style="margin:0"/>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+        <button onclick="document.getElementById('addCaseModal').classList.remove('open')" style="background:transparent;border:1.5px solid var(--border);border-radius:8px;padding:10px 20px;font-family:'Inter',sans-serif;font-size:.88rem;font-weight:600;color:var(--muted);cursor:pointer">Cancel</button>
+        <button onclick="saveAddedCase()" style="background:var(--navy);border:none;border-radius:8px;padding:10px 24px;font-family:'Inter',sans-serif;font-size:.88rem;font-weight:600;color:#fff;cursor:pointer">Add Case →</button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+  document.body.appendChild(modal);
+  requestAnimationFrame(() => modal.classList.add('open'));
+}
+
+function saveAddedCase() {
+  const name   = document.getElementById('acName')?.value.trim();
+  const email  = document.getElementById('acEmail')?.value.trim();
+  const type   = document.getElementById('acType')?.value;
+  const status = document.getElementById('acStatus')?.value;
+  const start  = document.getElementById('acStart')?.value;
+  const ret    = document.getElementById('acReturn')?.value;
+  if (!name) { showToast('Name required', 'Please enter the employee name.', 'warn'); return; }
+  const id = 'LOA-' + Date.now().toString().slice(-5);
+  const typeColors = { FMLA:'ltype-fmla', Medical:'ltype-med', Parental:'ltype-par', Personal:'ltype-per', 'Workers Comp':'ltype-wc' };
+  const statusColors = { new:'sp-new', pending:'sp-pending', approved:'sp-approved', active:'sp-active', returning:'sp-returning' };
+  loaData.push({
+    id, name, email: email || '', type,
+    start: start || '', ret: ret || '',
+    status, urgent: false,
+    tclass: typeColors[type] || 'ltype-fmla',
+    sclass: statusColors[status] || 'sp-new',
+    timeline: [], notes: []
+  });
+  renderTable();
+  renderDashStats();
+  scheduleSave();
+  document.getElementById('addCaseModal').classList.remove('open');
+  showToast('Case Added ✓', `LOA case for ${name} has been created.`);
+}
 
 // ── RENDER TABLE ──
 function renderTable(filter='all') {
