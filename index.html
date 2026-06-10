@@ -5320,6 +5320,9 @@ async function logout() {
   if (emailCount) emailCount.textContent = '0 sent today';
   const backBtn = document.getElementById('backToEmpBtn');
   if (backBtn) backBtn.style.display = 'none';
+  // clear company name from topbar so it's not visible on login screen
+  document.querySelectorAll('.company-name-display').forEach(el => el.textContent = '—');
+  currentCompany = null;
   // reset shells
   document.getElementById('hr-shell').style.display = 'none';
   document.getElementById('emp-shell').style.display = 'none';
