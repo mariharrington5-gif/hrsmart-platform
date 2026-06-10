@@ -5679,10 +5679,10 @@ window.loginAs = async function(role) {
   if (btn) { btn.textContent = 'Sign In →'; btn.disabled = false; }
   if (error) { showToast('Sign in failed', error.message, 'error'); return; }
   currentSessionName = data.user.email;
-  // Read role + company from user metadata (set via Supabase admin or set_user_metadata())
-  // Falls back to profiles table if metadata not set
-  let userRoleVal = data.user.user_metadata?.role;
-  let userCompany = data.user.user_metadata?.company || null;
+  // Force a fresh user fetch to get the latest metadata (avoids JWT cache issues)
+  const { data: { user: freshUser } } = await _sb.auth.getUser();
+  let userRoleVal = freshUser?.user_metadata?.role || data.user.user_metadata?.role;
+  let userCompany = freshUser?.user_metadata?.company || data.user.user_metadata?.company || null;
   if (!userRoleVal) {
     const { data: profile, error: pErr } = await _sb.from('profiles').select('role, company').eq('id', data.user.id).single();
     if (pErr || !profile) { showToast('Account not set up', 'Contact HR Smart to activate your account.', 'error'); await _sb.auth.signOut(); return; }
