@@ -1978,7 +1978,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
             <div class="card-title">🧩 À La Carte Modules</div>
             <div style="font-size:.78rem;color:var(--muted);margin-top:2px">Enable or disable platform features per client. Disabled modules are hidden from the client's navigation instantly.</div>
           </div>
-          <div style="font-size:.75rem;font-weight:600;color:var(--green);background:var(--green-bg);padding:4px 10px;border-radius:20px">Active: <span class="company-name-display">Crestline Manufacturing</span></div>
+          <div style="font-size:.75rem;font-weight:600;color:var(--green);background:var(--green-bg);padding:4px 10px;border-radius:20px">Active: <span class="company-name-display">—</span></div>
         </div>
         <div style="padding:8px 20px 20px">
           <!-- Company selector for modules -->
@@ -3390,9 +3390,20 @@ function applyModules(companyId) {
   }
 }
 
-function renderModulesPanel(companyId) {
+async function renderModulesPanel(companyId) {
+  // Fall back to first company in dropdown if none specified
+  if (!companyId) {
+    const sel = document.getElementById('modulesCompanySelect');
+    companyId = sel?.value || Object.keys(COMPANIES)[0];
+  }
+  if (!companyId) return;
+  // Fetch from DB if not cached
+  if (!COMPANIES[companyId]) {
+    const coData = await loadCompanyFromDB(companyId);
+    if (!coData) return;
+    COMPANIES[companyId] = coData;
+  }
   const co = COMPANIES[companyId];
-  if (!co) return;
   const mods = co.modules || {};
   const container = document.getElementById('modules-list');
   if (!container) return;
