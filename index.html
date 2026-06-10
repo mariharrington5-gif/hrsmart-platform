@@ -5436,7 +5436,7 @@ const _origRejectEmail = rejectEmail;
 window.rejectEmail = function(i) { _origRejectEmail(i); dbSavePendingEmails(); };
 
 const _origSendFollowupEmail = sendFollowupEmail;
-window.sendFollowupEmail = function() { _origSendFollowupEmail(); dbSavePendingEmails(); };
+window.sendFollowupEmail = function() { _origSendFollowupEmail(); setTimeout(() => dbSavePendingEmails(), 1100); };
 
 // ── REAL EMAIL via Supabase Edge Function → SendGrid ──
 // API key lives in Supabase secrets (SENDGRID_API_KEY), never in the browser.
