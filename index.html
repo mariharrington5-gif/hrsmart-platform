@@ -2398,30 +2398,48 @@ function renderPendingEmails() {
   const banner = document.getElementById('pendingApprovalBanner');
   const actionsEl = document.getElementById('pendingEmailActions');
   if (!banner || !actionsEl) return;
-  if (pendingEmailApprovals.length === 0) {
-    banner.style.display = 'none';
-    return;
-  }
+  if (pendingEmailApprovals.length === 0) { banner.style.display = 'none'; return; }
   banner.style.display = 'flex';
   const isClient = userRole === 'client';
+  const pending = pendingEmailApprovals.filter(e => !e.revisionRequested);
+  const revisions = pendingEmailApprovals.filter(e => e.revisionRequested);
   document.getElementById('pendingBannerText').textContent = isClient
-    ? `You have ${pendingEmailApprovals.length} email draft${pendingEmailApprovals.length>1?'s':''} from your HR advisor waiting for your approval.`
-    : `${pendingEmailApprovals.length} email draft${pendingEmailApprovals.length>1?'s':''} submitted — awaiting client approval before sending.`;
-  actionsEl.innerHTML = pendingEmailApprovals.map((e,i) =>
-    `<div style="background:#fff;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:.82rem;max-width:380px">
-      <div style="font-weight:600;color:var(--navy);margin-bottom:4px">📧 ${e.subject}</div>
-      <div style="font-size:.74rem;color:var(--muted);margin-bottom:4px">To: ${e.name} · ${e.type}</div>
-      <div style="color:var(--muted);font-size:.77rem;margin-bottom:6px;white-space:pre-wrap;line-height:1.45">${e.preview}</div>
+    ? `You have ${pending.length} email draft${pending.length>1?'s':''} from your HR advisor waiting for your approval.`
+    : `${pending.length} awaiting client approval${revisions.length ? ` · ${revisions.length} returned for revision` : ''}.`;
+  actionsEl.innerHTML = pendingEmailApprovals.map((e,i) => {
+    const isRevision = !!e.revisionRequested;
+    const cardBorder = isRevision ? '#fca5a5' : '#fde68a';
+    const cardBg = isRevision ? '#fff7f7' : '#fff';
+    return `<div style="background:${cardBg};border:1px solid ${cardBorder};border-radius:8px;padding:10px 14px;font-size:.82rem;max-width:420px">
+      ${isRevision ? `<div style="font-size:.72rem;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">✏️ Changes Requested</div>
+        ${e.revisionNote ? `<div style="font-size:.76rem;color:#dc2626;background:#fee2e2;border-radius:5px;padding:5px 8px;margin-bottom:8px">${e.revisionNote}</div>` : ''}` : ''}
+      <div style="font-weight:600;color:var(--navy);margin-bottom:2px">📧 ${e.subject}</div>
+      <div style="font-size:.74rem;color:var(--muted);margin-bottom:6px">To: ${e.name} · ${e.type||''}</div>
+      <div id="email-preview-${i}" style="color:var(--muted);font-size:.77rem;margin-bottom:6px;white-space:pre-wrap;line-height:1.45">${e.preview}</div>
+      ${e.body && e.body !== e.preview ? `<button onclick="toggleEmailBody(${i})" id="email-toggle-${i}" style="background:none;border:none;font-size:.73rem;color:var(--navy);cursor:pointer;text-decoration:underline;padding:0;margin-bottom:8px">▼ Read full email</button>` : ''}
       ${e.formsNote ? `<div style="font-size:.74rem;color:#1a56c4;background:#f0f4fa;border-radius:5px;padding:5px 8px;margin-bottom:8px">${e.formsNote}</div>` : ''}
-      <div style="display:flex;gap:6px">
-        ${isClient
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${isClient && !isRevision
           ? `<button class="approve-btn" onclick="approveEmail(${i})">✓ Approve &amp; Send</button>
-             <button class="deny-btn" onclick="rejectEmail(${i})">Request Changes</button>`
-          : `<button class="deny-btn" onclick="recallEmail(${i})" style="background:#f1f5f9;color:var(--navy);border-color:#cbd5e1">✕ Recall Draft</button>`
+             <button class="deny-btn" onclick="requestEmailChanges(${i})">✏️ Request Changes</button>`
+          : !isClient
+            ? `<button class="deny-btn" onclick="recallEmail(${i})" style="background:#f1f5f9;color:var(--navy);border-color:#cbd5e1">✕ Recall</button>`
+            : ''
         }
       </div>
-    </div>`
-  ).join('');
+    </div>`;
+  }).join('');
+}
+
+function toggleEmailBody(i) {
+  const e = pendingEmailApprovals[i];
+  const previewEl = document.getElementById('email-preview-' + i);
+  const toggleBtn = document.getElementById('email-toggle-' + i);
+  if (!previewEl || !e.body) return;
+  const isExpanded = previewEl.dataset.expanded === '1';
+  previewEl.textContent = isExpanded ? e.preview : e.body;
+  previewEl.dataset.expanded = isExpanded ? '0' : '1';
+  if (toggleBtn) toggleBtn.textContent = isExpanded ? '▼ Read full email' : '▲ Collapse';
 }
 
 function approveEmail(i) {
@@ -2432,10 +2450,19 @@ function approveEmail(i) {
   showToast('Email Approved & Sent ✓', `"${e.subject}" has been approved and sent to ${e.name}.`);
 }
 
-function rejectEmail(i) {
-  pendingEmailApprovals.splice(i, 1);
+function requestEmailChanges(i) {
+  const e = pendingEmailApprovals[i];
+  const note = prompt('What changes are needed? (optional — your HR advisor will see this)');
+  if (note === null) return; // cancelled
+  e.revisionRequested = true;
+  e.revisionNote = note || '';
   renderPendingEmails();
-  showToast('Changes Requested', 'Your HR advisor has been notified to revise the draft.', 'warn');
+  setTimeout(() => dbSavePendingEmails(), 200);
+  showToast('Changes Requested', 'Your HR advisor will be notified to revise the draft.', 'warn');
+}
+
+function rejectEmail(i) {
+  requestEmailChanges(i);
 }
 
 function recallEmail(i) {
