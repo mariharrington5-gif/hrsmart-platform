@@ -2526,16 +2526,15 @@ function openDrawer(id) {
         </div>`).join('')}
       </div>
     </div>
-    ${needsFollowup ? `
     <div class="d-section">
       <div class="d-label">Follow-Up Actions</div>
-      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:14px 16px;margin-bottom:10px">
+      ${needsFollowup ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:14px 16px;margin-bottom:10px">
         <div style="font-size:.78rem;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">⚡ Action Needed</div>
         <div style="font-size:.83rem;color:#92400e;margin-bottom:12px">${r.next}</div>
-        ${userRole === 'admin' ? `<button onclick="closeDrawer();openEmailModal('${r.id}')" style="background:linear-gradient(135deg,var(--teal),var(--teal2));color:#fff;border:none;border-radius:7px;padding:9px 18px;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px">📧 Send Follow-up Email to ${r.name.split(' ')[0]}</button>` : ''}
         ${userRole === 'client' && r.status === 'Pending Approval' ? `<div style="display:flex;gap:8px;margin-top:4px"><button class="approve-btn" style="padding:9px 18px;font-size:.84rem" onclick="closeDrawer();approveLeave('${r.id}')">✓ Approve This Leave</button><button class="deny-btn" style="padding:9px 18px;font-size:.84rem" onclick="closeDrawer();denyLeave('${r.id}')">✗ Deny</button></div>` : ''}
-      </div>
-    </div>` : ''}
+      </div>` : ''}
+      ${userRole === 'admin' ? `<button onclick="closeDrawer();openEmailModal('${r.id}')" style="background:linear-gradient(135deg,var(--teal),var(--teal2));color:#fff;border:none;border-radius:7px;padding:9px 18px;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px">📧 Send Follow-up Email to ${r.name.split(' ')[0]}</button>` : ''}
+    </div>
     ${r.certApproved ? `
     <div class="d-section">
       <div class="d-label">Medical Certification Form</div>
