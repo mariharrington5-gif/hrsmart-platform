@@ -1319,10 +1319,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <div class="email-modal-body">
       <div style="font-size:.8rem;color:var(--muted);margin-bottom:14px">Select the type of follow-up to pre-fill the email template, then review and send.</div>
       <div class="email-type-row" id="emailTypeRow">
-        <button class="email-type-btn active" onclick="setEmailType('cert','Missing Certification')">📋 Missing Cert</button>
-        <button class="email-type-btn" onclick="setEmailType('info','Missing Information')">📝 Missing Info</button>
-        <button class="email-type-btn" onclick="setEmailType('return','Return-to-Work Form')">🏢 Return to Work</button>
-        <button class="email-type-btn" onclick="setEmailType('reminder','General Reminder')">🔔 Reminder</button>
+        <button class="email-type-btn active" data-etype="cert" onclick="setEmailType('cert','Missing Certification')">📋 Missing Cert</button>
+        <button class="email-type-btn" data-etype="info" onclick="setEmailType('info','Missing Information')">📝 Missing Info</button>
+        <button class="email-type-btn" data-etype="return" onclick="setEmailType('return','Return-to-Work Form')">🏢 Return to Work</button>
+        <button class="email-type-btn" data-etype="reminder" onclick="setEmailType('reminder','General Reminder')">🔔 Reminder</button>
       </div>
       <div class="email-field">
         <label>To</label>
@@ -2103,7 +2103,7 @@ function setEmailType(type, label) {
 // ── EMAIL FORM ATTACHMENTS ──
 let emailAttachedForms = []; // forms selected to accompany the current email draft
 const EMAIL_FORM_LIBRARY = [
-  {id:'wh380e', name:'WH-380-E — Employee Health Condition (FMLA)', url:'https://www.dol.gov/sites/dolgov/files/WHD/legacy/files/wh380E.pdf',  types:['FMLA/CFRA','Personal Leave','Other']},
+  {id:'wh380e', name:'WH-380-E — Employee Health Condition (FMLA)', url:'https://www.dol.gov/sites/dolgov/files/WHD/legacy/files/wh380E.pdf',  types:['FMLA/CFRA','Medical','FMLA']},
   {id:'wh380f', name:'WH-380-F — Family Member Health Condition (FMLA)', url:'https://www.dol.gov/sites/dolgov/files/WHD/legacy/files/wh380F.pdf', types:['Baby Bonding']},
   {id:'wh381',  name:'WH-381 — Notice of Eligibility & Rights',   url:'https://www.dol.gov/sites/dolgov/files/WHD/legacy/files/WH-381.pdf',   types:['FMLA/CFRA','Pregnancy Disability','Baby Bonding','Personal Leave']},
   {id:'wh382',  name:'WH-382 — FMLA Designation Notice',          url:'https://www.dol.gov/sites/dolgov/files/WHD/legacy/files/WH-382.pdf',   types:['FMLA/CFRA']},
@@ -2116,7 +2116,7 @@ function renderEmailForms(leaveType) {
   const list = document.getElementById('emailFormsList');
   if (!list) return;
   emailAttachedForms = [];
-  const primaryId = EMAIL_FORM_PRIMARY[leaveType] || 'wh380e';
+  const primaryId = EMAIL_FORM_PRIMARY[leaveType]; // no fallback — don't attach medical forms for non-medical leaves
   const relevant = EMAIL_FORM_LIBRARY.filter(f => f.types.includes(leaveType) || f.id === 'wh381');
   if (!relevant.length) { list.innerHTML = '<div style="font-size:.78rem;color:var(--muted)">No standard forms for this leave type.</div>'; return; }
   list.innerHTML = relevant.map(f => `
@@ -2143,14 +2143,18 @@ function openEmailModal(id) {
   const r = loaData.find(x=>x.id===id);
   if(!r) return;
   const ctx = coCtx();
-  document.getElementById('emailTo').value = r.name.toLowerCase().replace(/\s+/g,'.') + '@' + ctx.domain;
+  // Use actual employee email if stored, otherwise guess from name + domain
+  document.getElementById('emailTo').value = r.email || (r.name.toLowerCase().replace(/\s+/g,'.') + '@' + ctx.domain);
   document.getElementById('emailCC').value = ctx.email;
-  const tmpl = emailTemplates['cert'](r.name, r.id);
+  // Choose sensible default email type based on leave type
+  const medicalLeaves = ['FMLA','Medical','Pregnancy','Workers Comp'];
+  const defaultType = medicalLeaves.some(t => r.type?.includes(t)) ? 'cert' : 'reminder';
+  const tmpl = emailTemplates[defaultType](r.name, r.id);
   document.getElementById('emailSubject').value = tmpl.subj;
   document.getElementById('emailBody').value = tmpl.body;
-  currentEmailType = 'cert';
-  document.querySelectorAll('.email-type-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
-  renderEmailForms(r.type); // populate form checkboxes for this leave type
+  currentEmailType = defaultType;
+  document.querySelectorAll('.email-type-btn').forEach(b => b.classList.toggle('active', b.dataset.etype === defaultType));
+  renderEmailForms(r.type);
   document.getElementById('emailModal').classList.add('open');
 }
 
@@ -2288,7 +2292,7 @@ function saveAddedCase() {
   const statusColors = { new:'sp-new', pending:'sp-pending', approved:'sp-approved', active:'sp-active', returning:'sp-returning' };
   loaData.push({
     id, name, email: email || '', type,
-    start: start || '', ret: ret || '',
+    start: start || '', end: ret || '', ret: ret || '',
     status, urgent: false,
     next: 'Review case and send initial follow-up communication to employee.',
     tclass: typeColors[type] || 'ltype-fmla',
@@ -2319,11 +2323,11 @@ function renderTable(filter='all') {
       actionCell = `<button class="action-btn">View →</button>`;
     }
     return `<tr style="cursor:pointer" onclick="openDrawer('${r.id}')">
-      <td><div class="emp-name">${r.name}</div><div class="emp-id">${r.id} · ${r.title}</div></td>
+      <td><div class="emp-name">${r.name}</div><div class="emp-id">${r.id}${r.title?' · '+r.title:''}</div></td>
       <td><span class="ltype ${r.tclass}">${r.type}</span></td>
-      <td style="font-size:.8rem;color:var(--muted)">${r.start} → ${r.end}</td>
+      <td style="font-size:.8rem;color:var(--muted)">${r.start||'—'} → ${r.end||r.ret||'—'}</td>
       <td><span class="status-pill ${r.sclass}"><span class="dot"></span>${r.status}</span></td>
-      <td><span class="${r.urgent?'urgent':'days-badge'}">${r.days}d${r.urgent?' ⚠️':''}</span></td>
+      <td><span class="${r.urgent?'urgent':'days-badge'}">${r.days!=null?r.days+'d':'—'}${r.urgent?' ⚠️':''}</span></td>
       <td>${actionCell}</td>
     </tr>`;
   }).join('');
@@ -2363,7 +2367,7 @@ function approveLeave(id) {
       if (step.date === 'TBD') step.date = ts.split(',').slice(0,2).join(',').trim();
     });
     // Ensure the final "Leave Approved" step shows the approver
-    const approvalStep = r.timeline.find(s => s.step.toLowerCase().includes('approved') || s.step.toLowerCase().includes('approval'));
+    const approvalStep = r.timeline.find(s => (s.step||s.event||'').toLowerCase().includes('approved') || (s.step||s.event||'').toLowerCase().includes('approval'));
     if (approvalStep) approvalStep.note = `Approved by ${COMPANIES[currentCompany].name}`;
   }
   renderTable();
@@ -2481,6 +2485,7 @@ function recallEmail(i) {
   const e = pendingEmailApprovals[i];
   pendingEmailApprovals.splice(i, 1);
   renderPendingEmails();
+  dbSavePendingEmails();
   showToast('Draft Recalled', `"${e.subject}" has been removed from the approval queue.`, 'warn');
 }
 
@@ -2558,7 +2563,7 @@ function openDrawer(id) {
     <div class="d-section">
       <div class="d-label">Case Info</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${[['ID',r.id],['Type',r.type],['Start',r.start],['End',r.end],['Status',r.status],['Days Remaining',r.days],...(r.approvedBy?[['Approved By',r.approvedBy],['Approval Date',r.approvedAt],['Confirmed By',r.confirmedBy]]:[])].map(([k,v])=>`
+        ${[['ID',r.id],['Type',r.type],['Start',r.start||'—'],['End',r.end||r.ret||'—'],['Status',r.status],['Days Remaining',r.days!=null?r.days:'—'],...(r.approvedBy?[['Approved By',r.approvedBy],['Approval Date',r.approvedAt],['Confirmed By',r.confirmedBy]]:[])].map(([k,v])=>`
         <div style="background:#FAF7F3;border-radius:7px;padding:9px 12px">
           <div style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${k}</div>
           <div style="font-size:.88rem;font-weight:600;color:var(--navy)">${v}</div>
@@ -2569,7 +2574,7 @@ function openDrawer(id) {
       <div class="d-label">Follow-Up Actions</div>
       ${needsFollowup ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:14px 16px;margin-bottom:10px">
         <div style="font-size:.78rem;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">⚡ Action Needed</div>
-        <div style="font-size:.83rem;color:#92400e;margin-bottom:12px">${r.next}</div>
+        <div style="font-size:.83rem;color:#92400e;margin-bottom:12px">${r.next||''}</div>
         ${userRole === 'client' && r.status === 'Pending Approval' ? `<div style="display:flex;gap:8px;margin-top:4px"><button class="approve-btn" style="padding:9px 18px;font-size:.84rem" onclick="closeDrawer();approveLeave('${r.id}')">✓ Approve This Leave</button><button class="deny-btn" style="padding:9px 18px;font-size:.84rem" onclick="closeDrawer();denyLeave('${r.id}')">✗ Deny</button></div>` : ''}
       </div>` : ''}
       ${userRole === 'admin' ? `<button onclick="closeDrawer();openEmailModal('${r.id}')" style="background:linear-gradient(135deg,var(--teal),var(--teal2));color:#fff;border:none;border-radius:7px;padding:9px 18px;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px">📧 Send Follow-up Email to ${r.name.split(' ')[0]}</button>` : ''}
@@ -2585,10 +2590,10 @@ function openDrawer(id) {
     <div class="d-section">
       <div class="d-label">Leave Timeline</div>
       <div class="timeline">
-        ${r.timeline.map(t=>`
+        ${(r.timeline||[]).map(t=>`
         <div class="tl-item">
           <div class="tl-dot ${t.done?'done':t.active?'active':'pending'}"></div>
-          <div class="tl-step">${t.step}</div>
+          <div class="tl-step">${t.step||t.event||''}</div>
           ${t.note?`<div class="tl-note">${t.note}</div>`:''}
           ${t.date?`<div class="tl-date">${t.date}</div>`:''}
         </div>`).join('')}
@@ -2596,7 +2601,7 @@ function openDrawer(id) {
     </div>
     <div class="d-section">
       <div class="d-label">Next Action Required</div>
-      <div class="next-steps"><strong>⚡ HR Action</strong>${r.next}</div>
+      <div class="next-steps"><strong>⚡ HR Action</strong>${r.next||'No action currently required.'}</div>
     </div>`;
   document.getElementById('drawer').classList.add('open');
   document.getElementById('overlay').classList.add('show');
@@ -2640,6 +2645,7 @@ async function generateEmailDraft() {
       name:'Leadership', type:'Weekly Summary', caseId:'summary',
     });
     renderPendingEmails();
+    dbSavePendingEmails();
     document.getElementById('summaryContent').innerHTML += `<hr style="margin:20px 0;border:none;border-top:1px solid var(--border)"><div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;font-size:.84rem;color:#92400e"><strong>📤 Sent for Client Approval</strong><br>The email draft has been sent to your client for review. Once approved it will appear in the email log.</div>`;
   } catch(e){}
   btn.disabled=false; btn.innerHTML='📧 Draft Summary Email';
@@ -4070,6 +4076,7 @@ function saveDeparture() {
 // ── POLICY NOTIFICATIONS ──
 function renderPolicyNotifications() {
   const co = COMPANIES[currentCompany];
+  if (!co) return;
   const updates = (co.policyUpdates || []).filter(p => !p.acknowledged);
   const container = document.getElementById('policyNotifContainer');
   if (!container) return;
@@ -5181,11 +5188,6 @@ function eaSubmitAssess(){
         <div style="font-size:3rem">✅</div>
         <h3>Request Submitted!</h3>
         <p>Your leave request has been received. HR will reach out within 2 business days with next steps and any required forms.</p>
-        <!-- HR switch banner — prominent, right below the title -->
-        <div id="hrSwitchBanner" style="background:var(--navy);border-radius:10px;padding:14px 18px;margin:0 0 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-          <div style="color:#fff;font-size:.88rem;font-weight:600">👔 Demo: Switch to HR Admin to review this request</div>
-          <button onclick="switchToHRView()" style="background:#fff;color:var(--navy);border:none;border-radius:7px;padding:8px 18px;font-family:'Inter',sans-serif;font-size:.84rem;font-weight:700;cursor:pointer;white-space:nowrap">View as HR Admin →</button>
-        </div>
         <div style="display:flex;justify-content:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
           <span class="status-pill sp-pending">⏳ Pending HR Review</span>
           <span class="status-pill sp-approved">✉️ HR Notified</span>
@@ -5895,7 +5897,7 @@ function renderEmpLeaveStatus() {
       return isNaN(d) ? null : d;
     };
     try {
-      const start = parseDate(r.start), end = parseDate(r.end);
+      const start = parseDate(r.start), end = parseDate(r.end||r.ret);
       if (!start || !end) return typeof r.days === 'number' ? r.days : 90;
       return Math.max(1, Math.ceil((end-start)/(1000*60*60*24)));
     } catch(e) { return 90; }
@@ -5909,16 +5911,16 @@ function renderEmpLeaveStatus() {
   const statusColor = {'Awaiting Cert':'#D4924A','Pending Approval':'#9C7BB0','Approved':'#3A7A50','Active':'#C8A46A','Returning':'#111111','New':'#6B9080','Closed':'#94a3b8'}[r.status] || '#C8A46A';
 
   // Determine what action the employee needs to take
-  const empActions = r.timeline.filter(t => !t.done && t.active).map(t => ({
-    icon: t.step.includes('Cert') ? '📋' : t.step.includes('Return') ? '🏢' : '📝',
-    title: t.step,
+  const empActions = (r.timeline||[]).filter(t => !t.done && t.active).map(t => ({
+    icon: (t.step||'').includes('Cert') ? '📋' : (t.step||'').includes('Return') ? '🏢' : '📝',
+    title: t.step||t.event||'',
     note: t.note || 'Action may be required — contact HR for details.',
     date: t.date,
     urgent: r.urgent,
   }));
 
-  const completedSteps = r.timeline.filter(t => t.done).length;
-  const totalSteps = r.timeline.length;
+  const completedSteps = (r.timeline||[]).filter(t => t.done).length;
+  const totalSteps = (r.timeline||[]).length;
 
   container.innerHTML = notifBanner + `
     <div class="loa-status-hero active-leave" style="display:flex;align-items:center;gap:22px">
@@ -5930,13 +5932,13 @@ function renderEmpLeaveStatus() {
             stroke-linecap="round" style="transition:stroke-dashoffset .8s ease"/>
         </svg>
         <div class="ring-text">
-          <div class="ring-num" style="font-size:${r.days==='TBD'?'1rem':'1.4rem'}">${r.days}</div>
-          <div class="ring-lbl">${r.days==='TBD'?'pending':'days left'}</div>
+          <div class="ring-num" style="font-size:${r.days==='TBD'||r.days==null?'1rem':'1.4rem'}">${r.days??'—'}</div>
+          <div class="ring-lbl">${r.days==='TBD'?'pending':r.days==null?'days left':'days left'}</div>
         </div>
       </div>
       <div class="loa-status-detail">
         <div class="loa-status-name">${r.type}</div>
-        <div class="loa-status-type">${r.start} → ${r.end} &nbsp;·&nbsp; Case ${r.id}</div>
+        <div class="loa-status-type">${r.start||'—'} → ${r.end||r.ret||'—'} &nbsp;·&nbsp; Case ${r.id}</div>
         <div class="loa-status-pills">
           <div class="loa-mini-pill">${r.status}</div>
           <div class="loa-mini-pill">${completedSteps} of ${totalSteps} steps complete</div>
@@ -5979,10 +5981,10 @@ function renderEmpLeaveStatus() {
     <div class="emp-timeline">
       <div class="emp-tl-head">Leave Timeline</div>
       <div class="timeline">
-        ${r.timeline.map(t => `
+        ${(r.timeline||[]).map(t => `
           <div class="tl-item">
             <div class="tl-dot ${t.done ? 'done' : t.active ? 'active' : 'pending'}"></div>
-            <div class="tl-step">${t.step}</div>
+            <div class="tl-step">${t.step||t.event||''}</div>
             ${t.note ? `<div class="tl-note">${t.note}</div>` : ''}
             ${t.date ? `<div class="tl-date">${t.date}</div>` : ''}
           </div>`).join('')}
