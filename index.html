@@ -6416,6 +6416,89 @@ const AUDIT_QUESTIONS = [
   ]}
 ];
 
+const BENEFITS_AUDIT_QUESTIONS = [
+  { category:'Open Enrollment', icon:'📅', key:'oe', color:'#8b5cf6', questions:[
+    { id:'oe_prep', text:'How long does preparing for open enrollment take your team each year?', options:[
+      {label:'More than 6 weeks of manual effort', score:1},
+      {label:'4–6 weeks with heavy manual effort', score:2},
+      {label:'3–4 weeks with some structured processes', score:3},
+      {label:'1–2 weeks with mostly streamlined steps', score:4},
+      {label:'Under 1 week — highly templated and efficient', score:5}]},
+    { id:'oe_elections', text:'How do employees complete their benefit elections?', options:[
+      {label:'Paper forms submitted to HR', score:1},
+      {label:'Email or basic forms, HR manually enters data', score:2},
+      {label:'Online portal but HR fields many questions', score:3},
+      {label:'Self-service portal with some HR involvement', score:4},
+      {label:'Fully self-service — minimal HR intervention', score:5}]},
+    { id:'oe_reminders', text:'How do you track employees who haven\'t completed enrollment?', options:[
+      {label:'No tracking — issues discovered after the fact', score:1},
+      {label:'Manual outreach once deadline is near', score:2},
+      {label:'Ad-hoc reminders sent close to deadline', score:3},
+      {label:'Scheduled reminders with a completion checklist', score:4},
+      {label:'Automated reminders with real-time completion tracking', score:5}]}
+  ]},
+  { category:'Life Events & Changes', icon:'🔄', key:'qle', color:'#ec4899', questions:[
+    { id:'qle_process', text:'How are qualifying life events (marriage, birth, divorce, etc.) handled?', options:[
+      {label:'Paper forms, HR manually processes and contacts carrier', score:1},
+      {label:'Email-based intake with manual follow-through', score:2},
+      {label:'Digital intake form but manual processing', score:3},
+      {label:'Mostly digital with some manual carrier updates', score:4},
+      {label:'Streamlined digital workflow with automated carrier notification', score:5}]},
+    { id:'qle_time', text:'How long does it typically take to process a benefits change?', options:[
+      {label:'More than 2 weeks', score:1},
+      {label:'1–2 weeks', score:2},
+      {label:'3–5 business days', score:3},
+      {label:'1–2 business days', score:4},
+      {label:'Same day or next business day', score:5}]}
+  ]},
+  { category:'Employee Education', icon:'📚', key:'edu', color:'#10b981', questions:[
+    { id:'edu_questions', text:'How are routine benefits questions handled?', options:[
+      {label:'HR answers every question individually by phone or email', score:1},
+      {label:'Some FAQs exist but employees still contact HR most of the time', score:2},
+      {label:'Benefits guide exists but needs frequent updating', score:3},
+      {label:'Self-service resources handle most routine questions', score:4},
+      {label:'Comprehensive self-service — HR rarely handles routine questions', score:5}]},
+    { id:'edu_awareness', text:'How well do employees understand and use their benefits?', options:[
+      {label:'Low utilization — many employees unaware of what they have', score:1},
+      {label:'Moderate awareness — some underutilization', score:2},
+      {label:'Reasonable awareness but communications are infrequent', score:3},
+      {label:'Good awareness with periodic education campaigns', score:4},
+      {label:'High utilization driven by proactive year-round education', score:5}]}
+  ]},
+  { category:'Vendor Management', icon:'🤝', key:'vendor', color:'#f59e0b', questions:[
+    { id:'vendor_invoicing', text:'How do you reconcile benefits invoices from carriers each month?', options:[
+      {label:'Fully manual line-by-line comparison', score:1},
+      {label:'Mostly manual with errors often found late', score:2},
+      {label:'Partially structured but still time-consuming', score:3},
+      {label:'Streamlined with occasional manual review', score:4},
+      {label:'Automated reconciliation — only exceptions flagged', score:5}]},
+    { id:'vendor_comms', text:'How do you manage your broker and carrier relationships?', options:[
+      {label:'Reactive — contact only when issues arise', score:1},
+      {label:'Occasional check-ins via long email chains', score:2},
+      {label:'Regular scheduled touchpoints', score:3},
+      {label:'Structured relationship with defined SLAs', score:4},
+      {label:'Proactive strategic partnership with regular reviews', score:5}]}
+  ]},
+  { category:'Benefits Technology', icon:'💻', key:'tech', color:'#3b82f6', questions:[
+    { id:'tech_tools', text:'What tools do you currently use for benefits administration?', options:[
+      {label:'Spreadsheets and email only', score:1},
+      {label:'Basic HR software with minimal benefits features', score:2},
+      {label:'Dedicated benefits platform but underutilized', score:3},
+      {label:'Benefits platform used for most processes', score:4},
+      {label:'Fully integrated benefits technology stack', score:5}]},
+    { id:'tech_integration', text:'How well does your benefits system connect with payroll and HRIS?', options:[
+      {label:'No integration — manual data transfer between systems', score:1},
+      {label:'Partial integration with frequent manual corrections', score:2},
+      {label:'Some integration but notable gaps remain', score:3},
+      {label:'Good integration with occasional manual steps', score:4},
+      {label:'Full real-time integration — data flows automatically', score:5}]}
+  ]}
+];
+
+function getAuditQuestions(audit) {
+  return audit?.type === 'benefits' ? BENEFITS_AUDIT_QUESTIONS : AUDIT_QUESTIONS;
+}
+
 let _currentAuditId = null;
 
 function getAllAudits() {
@@ -6443,7 +6526,10 @@ function renderAuditPipeline() {
       return `<div class="aud-card" onclick="openAuditDetail('${a.id}','${a._slug}')">
         <div class="aud-card-name">${a.clientName || COMPANIES[a._slug]?.name || a._slug}</div>
         <div class="aud-card-meta">${a.contactName || 'No contact set'} · ${a.createdAt || ''}</div>
-        ${scorePct ? `<span class="aud-score-badge" style="background:${scoreColor}20;color:${scoreColor}">${scorePct}% Efficient</span>` : '<span class="aud-score-badge" style="background:#f1f5f9;color:#64748b">Intake pending</span>'}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+          <span style="font-size:.68rem;font-weight:600;padding:2px 7px;border-radius:10px;background:${a.type==='benefits'?'#f3e8ff':'#eff6ff'};color:${a.type==='benefits'?'#7c3aed':'#1d4ed8'}">${a.type==='benefits'?'🩺 Benefits':'🏢 HR Efficiency'}</span>
+          ${scorePct ? `<span class="aud-score-badge" style="background:${scoreColor}20;color:${scoreColor}">${scorePct}% Efficient</span>` : '<span class="aud-score-badge" style="background:#f1f5f9;color:#64748b">Intake pending</span>'}
+        </div>
       </div>`;
     }).join('');
   });
@@ -6458,6 +6544,12 @@ function openNewAuditModal() {
   modal.innerHTML = `
     <div style="background:#fff;border-radius:var(--r);width:min(480px,94vw);padding:28px 32px;box-shadow:0 24px 60px rgba(0,0,0,.18)">
       <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;color:var(--navy);margin-bottom:18px">🔍 Start New Audit</div>
+      <div style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Audit Type</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button id="auditTypeHR" onclick="setAuditTypeBtn('hr')" style="flex:1;padding:10px 8px;border:2px solid var(--navy);border-radius:8px;background:var(--navy);color:#fff;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer">🏢 HR Efficiency</button>
+        <button id="auditTypeBen" onclick="setAuditTypeBtn('benefits')" style="flex:1;padding:10px 8px;border:2px solid var(--border);border-radius:8px;background:#fff;color:var(--muted);font-family:'Inter',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer">🩺 Benefits Admin</button>
+      </div>
+      <input type="hidden" id="auditTypeVal" value="hr"/>
       <div style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Client / Company Name</div>
       <input id="auditClientName" class="emp-login-input" style="margin:0 0 14px" placeholder="e.g. Acme Corp"/>
       <div style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Client Contact Name</div>
@@ -6472,14 +6564,30 @@ function openNewAuditModal() {
   requestAnimationFrame(() => modal.classList.add('open'));
 }
 
+function setAuditTypeBtn(type) {
+  document.getElementById('auditTypeVal').value = type;
+  const hrBtn = document.getElementById('auditTypeHR');
+  const benBtn = document.getElementById('auditTypeBen');
+  if (type === 'hr') {
+    hrBtn.style.cssText = hrBtn.style.cssText.replace(/background:[^;]+;color:[^;]+;border:[^;]+/,'') ;
+    hrBtn.style.background = 'var(--navy)'; hrBtn.style.color = '#fff'; hrBtn.style.border = '2px solid var(--navy)';
+    benBtn.style.background = '#fff'; benBtn.style.color = 'var(--muted)'; benBtn.style.border = '2px solid var(--border)';
+  } else {
+    benBtn.style.background = 'var(--navy)'; benBtn.style.color = '#fff'; benBtn.style.border = '2px solid var(--navy)';
+    hrBtn.style.background = '#fff'; hrBtn.style.color = 'var(--muted)'; hrBtn.style.border = '2px solid var(--border)';
+  }
+}
+
 function createAudit() {
   const clientName = document.getElementById('auditClientName')?.value.trim();
   const contact = document.getElementById('auditContactName')?.value.trim() || '';
+  const type = document.getElementById('auditTypeVal')?.value || 'hr';
   if (!clientName) { showToast('Client name required', 'Please enter the company or client name.', 'warn'); return; }
   const slug = currentCompany;
   const audit = {
     id: 'AUD-' + Date.now().toString().slice(-6),
     stage: 'intake',
+    type,
     clientName,
     contactName: contact,
     createdAt: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}),
@@ -6555,7 +6663,7 @@ function renderAuditIntake() {
     <div style="margin-bottom:20px;padding:14px 18px;background:var(--blue-bg);border:1px solid #c7d7f5;border-radius:var(--r);font-size:.83rem;color:var(--navy)">
       <strong>Instructions:</strong> Select the answer that best describes the client's current state for each question. Answers auto-save as you go.
     </div>
-    ${AUDIT_QUESTIONS.map(cat => `
+    ${getAuditQuestions(audit).map(cat => `
     <div class="aud-q-group">
       <div class="aud-q-title"><span style="font-size:1.1rem">${cat.icon}</span> ${cat.category}</div>
       ${cat.questions.map(q => `
@@ -6587,12 +6695,13 @@ function saveAuditAnswer(qId, score) {
 function scoreAudit() {
   const audit = getAudit(_currentAuditId);
   if (!audit) return;
-  const total = AUDIT_QUESTIONS.flatMap(c => c.questions).length;
+  const questions = getAuditQuestions(audit);
+  const total = questions.flatMap(c => c.questions).length;
   const answered = Object.keys(audit.answers).length;
   if (answered < total * 0.6) { showToast('More answers needed', `Please answer at least ${Math.ceil(total * 0.6)} questions before scoring.`, 'warn'); return; }
   const scores = {};
   let sumAll = 0, countAll = 0;
-  AUDIT_QUESTIONS.forEach(cat => {
+  questions.forEach(cat => {
     let sum = 0, count = 0;
     cat.questions.forEach(q => {
       if (audit.answers[q.id] != null) { sum += audit.answers[q.id]; count++; }
@@ -6641,7 +6750,7 @@ function renderAuditScorecard() {
     </div>
     <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:20px 22px;margin-bottom:16px">
       <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:.95rem;color:var(--navy);margin-bottom:16px">Score by Category</div>
-      ${AUDIT_QUESTIONS.map(cat => {
+      ${getAuditQuestions(audit).map(cat => {
         const score = s[cat.key];
         if (score == null) return '';
         const pct = Math.round((score / 5) * 100);
@@ -6658,7 +6767,7 @@ function renderAuditScorecard() {
     </div>
     <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:20px 22px">
       <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:.95rem;color:var(--navy);margin-bottom:14px">Key Improvement Opportunities</div>
-      ${AUDIT_QUESTIONS.filter(cat => s[cat.key] != null && (s[cat.key]/5)*100 < 65).sort((a,b) => s[a.key]-s[b.key]).map(cat => {
+      ${getAuditQuestions(audit).filter(cat => s[cat.key] != null && (s[cat.key]/5)*100 < 65).sort((a,b) => s[a.key]-s[b.key]).map(cat => {
         const pct = Math.round((s[cat.key]/5)*100);
         return `<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)">
           <span style="font-size:1.2rem">${cat.icon}</span>
@@ -6678,6 +6787,11 @@ function auditImprovementTip(key) {
   const tips = {
     loa: 'Automate leave request intake, tracking, and follow-up communications to cut processing time by up to 80%.',
     onboarding: 'Standardized digital onboarding checklists and automated task assignments reduce setup time from hours to minutes.',
+    oe: 'Templated enrollment communications and automated completion tracking can cut open enrollment prep time by 60–70%.',
+    qle: 'A digital intake form with automated carrier notifications reduces life event processing from weeks to same-day.',
+    edu: 'A self-service benefits hub with AI-powered Q&A eliminates the majority of routine employee questions.',
+    vendor: 'Automated invoice reconciliation and structured broker check-ins prevent billing errors and catch discrepancies early.',
+    tech: 'Connecting your benefits platform to payroll and HRIS eliminates duplicate data entry and reduces costly errors.',
     compliance: 'Continuous compliance monitoring eliminates the risk of missing law changes that could expose the company to liability.',
     communications: 'AI-drafted HR communications with a client approval workflow replace hours of manual writing each week.',
     analytics: 'Real-time HR dashboards replace manual reporting and surface insights leadership needs without extra effort.',
@@ -6693,15 +6807,21 @@ async function generateAuditReport() {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating…'; }
   const coName = audit.clientName || COMPANIES[slug]?.name || 'the client';
   const overallPct = Math.round((audit.scores.overall / 5) * 100);
-  const categoryLines = AUDIT_QUESTIONS.map(cat => {
+  const categoryLines = getAuditQuestions(audit).map(cat => {
     const score = audit.scores[cat.key];
     return score != null ? `${cat.category}: ${Math.round((score/5)*100)}%` : null;
   }).filter(Boolean).join(', ');
-  const prompt = `You are an HR consultant writing a professional HR AI Efficiency Audit report for ${coName}. Their overall efficiency score is ${overallPct}%. Category scores: ${categoryLines}.
+  const auditLabel = audit.type === 'benefits' ? 'Benefits Administration Efficiency Audit' : 'HR AI Efficiency Audit';
+  const auditContext = audit.type === 'benefits'
+    ? 'benefits administration processes (open enrollment, life events, employee education, vendor management, and benefits technology)'
+    : 'HR processes (leave management, onboarding, compliance, communications, and analytics)';
+  const prompt = `You are an HR consultant writing a professional ${auditLabel} report for ${coName}. Their overall efficiency score is ${overallPct}%. Category scores: ${categoryLines}.
+
+This audit covers ${auditContext}.
 
 Write a concise, professional report with these sections:
 1. EXECUTIVE SUMMARY (2-3 sentences on overall findings)
-2. KEY FINDINGS (bullet points per category — what the score means, what risk it creates)
+2. KEY FINDINGS (bullet points per category — what the score means, what risk or inefficiency it creates)
 3. PRIORITY RECOMMENDATIONS (top 3 specific, actionable steps — most impactful first)
 4. EXPECTED OUTCOMES (what they gain by implementing the recommendations — time saved, risk reduced, cost avoided)
 5. NEXT STEPS (brief call to action for moving forward with HR Smart)
