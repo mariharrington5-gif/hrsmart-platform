@@ -5921,22 +5921,28 @@ window.loginAs = async function(role) {
   if (!email || !password) { showToast('Missing info', 'Please enter your email and password.', 'warn'); return; }
   const btn = document.querySelector('#login' + (isAdmin ? 'Admin' : 'Client') + 'Pane .emp-login-btn');
   if (btn) { btn.textContent = 'Signing in…'; btn.disabled = true; }
-  const { data, error } = await _sb.auth.signInWithPassword({ email, password });
-  if (btn) { btn.textContent = 'Sign In →'; btn.disabled = false; }
-  if (error) { showToast('Sign in failed', error.message, 'error'); return; }
-  currentSessionName = data.user.email;
-  // Force a fresh user fetch to get the latest metadata (avoids JWT cache issues)
-  const { data: { user: freshUser } } = await _sb.auth.getUser();
-  let userRoleVal = freshUser?.user_metadata?.role || data.user.user_metadata?.role;
-  let userCompany = freshUser?.user_metadata?.company || data.user.user_metadata?.company || null;
-  if (!userRoleVal) {
-    const { data: profile, error: pErr } = await _sb.from('profiles').select('role, company').eq('id', data.user.id).single();
-    if (pErr || !profile) { showToast('Account not set up', 'Contact HR Smart to activate your account.', 'error'); await _sb.auth.signOut(); return; }
-    userRoleVal = profile.role;
-    userCompany = profile.company;
+  try {
+    const { data, error } = await _sb.auth.signInWithPassword({ email, password });
+    if (btn) { btn.textContent = 'Sign In →'; btn.disabled = false; }
+    if (error) { showToast('Sign in failed', error.message, 'error'); return; }
+    currentSessionName = data.user.email;
+    // Safe fetch of fresh user metadata — avoid destructuring crash if getUser() shape is unexpected
+    const guResult = await _sb.auth.getUser();
+    const freshUser = guResult?.data?.user || null;
+    let userRoleVal = freshUser?.user_metadata?.role || data.user.user_metadata?.role;
+    let userCompany = freshUser?.user_metadata?.company || data.user.user_metadata?.company || null;
+    if (!userRoleVal) {
+      const { data: profile, error: pErr } = await _sb.from('profiles').select('role, company').eq('id', data.user.id).single();
+      if (pErr || !profile) { showToast('Account not set up', 'Contact HR Smart to activate your account.', 'error'); await _sb.auth.signOut(); return; }
+      userRoleVal = profile.role;
+      userCompany = profile.company;
+    }
+    if (isAdmin && userRoleVal !== 'admin') { showToast('Access denied', 'This login is for HR Smart administrators only.', 'error'); await _sb.auth.signOut(); return; }
+    await finishLoginFromDB(userRoleVal, userCompany);
+  } catch(e) {
+    if (btn) { btn.textContent = 'Sign In →'; btn.disabled = false; }
+    showToast('Login error', e.message || 'Something went wrong. Please try again.', 'error');
   }
-  if (isAdmin && userRoleVal !== 'admin') { showToast('Access denied', 'This login is for HR Smart administrators only.', 'error'); await _sb.auth.signOut(); return; }
-  await finishLoginFromDB(userRoleVal, userCompany);
 };
 
 // ══ OPEN ENROLLMENT COUNTDOWN (employee portal) ══
