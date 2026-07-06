@@ -6599,7 +6599,7 @@ function createAudit() {
   if (!COMPANIES[slug]) COMPANIES[slug] = {audits:[]};
   if (!COMPANIES[slug].audits) COMPANIES[slug].audits = [];
   COMPANIES[slug].audits.push(audit);
-  scheduleSave();
+  dbSaveCompany();
   document.getElementById('newAuditModal')?.remove();
   renderAuditPipeline();
   openAuditDetail(audit.id, slug);
@@ -6712,7 +6712,7 @@ function scoreAudit() {
   scores.overall = countAll ? Math.round((sumAll / countAll) * 10) / 10 : null;
   audit.scores = scores;
   if (audit.stage === 'intake') audit.stage = 'scored';
-  scheduleSave();
+  dbSaveCompany();
   renderAuditPipeline();
   openAuditDetail(audit.id, getAuditSlug(audit.id));
   auditTab('scorecard', document.querySelectorAll('.aud-tab')[1]);
@@ -6836,7 +6836,7 @@ Tone: professional, direct, helpful. No filler. This is a paid deliverable. Keep
     const text = data.content?.find(b=>b.type==='text')?.text || 'Unable to generate report. Please check your API key in Admin → Settings.';
     audit.report = text;
     if (audit.stage === 'scored') { audit.stage = 'report'; renderAuditPipeline(); openAuditDetail(audit.id, slug); }
-    scheduleSave();
+    dbSaveCompany();
     auditTab('report', document.querySelectorAll('.aud-tab')[2]);
   } catch(e) {
     showToast('Error', 'Could not generate report. Check your API key.', 'error');
@@ -6922,7 +6922,7 @@ function advanceAuditStage() {
     showToast('Complete intake first', 'Answer the questionnaire before advancing.', 'warn'); return;
   }
   audit.stage = next;
-  scheduleSave();
+  dbSaveCompany();
   renderAuditPipeline();
   openAuditDetail(audit.id, slug);
   showToast('Stage Updated', `Audit moved to ${next}.`);
