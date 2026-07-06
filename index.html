@@ -5920,19 +5920,14 @@ async function clientPortalLogin() {
   const btn = document.getElementById('clientLoginBtn');
   if (btn) { btn.textContent = 'Signing in…'; btn.disabled = true; }
   try {
-    console.log('[Login] Step 1: signing in with password');
     const { data, error } = await _sb.auth.signInWithPassword({ email, password });
-    if (error) { console.error('[Login] Auth error:', error.message); showToast('Sign in failed', error.message, 'error'); return; }
-    console.log('[Login] Step 2: auth OK, fetching profile for', data.user.id);
+    if (error) { showToast('Sign in failed', error.message, 'error'); return; }
     currentSessionName = data.user.email;
     const { data: profile, error: pErr } = await _sb.from('profiles').select('role, company').eq('id', data.user.id).single();
-    if (pErr || !profile) { console.error('[Login] Profile error:', pErr?.message, 'profile:', profile); showToast('Account not set up', 'Contact HR Smart to activate your account.', 'error'); await _sb.auth.signOut(); return; }
-    console.log('[Login] Step 3: profile OK', profile, '— calling finishLoginFromDB');
+    if (pErr || !profile) { showToast('Account not set up', 'Contact HR Smart to activate your account.', 'error'); await _sb.auth.signOut(); return; }
     if (profile.role === 'admin') { showToast('Use admin login', 'Please use the HR Smart Admin Access link below.', 'warn'); await _sb.auth.signOut(); return; }
     await finishLoginFromDB(profile.role, profile.company);
-    console.log('[Login] Step 4: finishLoginFromDB complete');
   } catch(e) {
-    console.error('[Login] Caught error:', e);
     showToast('Login error', e.message || 'Something went wrong. Please try again.', 'error');
   } finally {
     if (btn) { btn.textContent = 'Sign In →'; btn.disabled = false; }
