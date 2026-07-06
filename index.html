@@ -749,9 +749,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
         <div style="font-size:1.6rem;margin-bottom:8px">🏢</div>
         <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.05rem;color:var(--navy);margin-bottom:4px">Client Portal</div>
         <div style="font-size:.82rem;color:var(--muted);margin-bottom:20px">Sign in to access your HR platform.</div>
-        <input class="emp-login-input" id="clientLoginUser" type="email" placeholder="Email address" onkeydown="if(event.key==='Enter')loginAs('client')"/>
-        <input class="emp-login-input" id="clientLoginPass" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')loginAs('client')"/>
-        <button class="emp-login-btn" style="background:var(--navy)" onclick="loginAs('client')">Sign In →</button>
+        <input class="emp-login-input" id="clientLoginUser" type="text" placeholder="Email address" onkeydown="if(event.key==='Enter')clientPortalLogin()"/>
+        <input class="emp-login-input" id="clientLoginPass" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')clientPortalLogin()"/>
+        <button id="clientLoginBtn" class="emp-login-btn" style="background:var(--navy)" onclick="clientPortalLogin()">Sign In →</button>
         <div style="text-align:center;margin-top:10px">
           <button onclick="showForgotPassword()" style="background:none;border:none;font-size:.74rem;color:var(--muted);cursor:pointer;text-decoration:underline;padding:0">Forgot password?</button>
         </div>
@@ -5910,6 +5910,28 @@ async function finishLoginFromDB(role, companySlug) {
   // If admin, also load all clients
   if (role === 'admin') loadAllClients();
   finishLogin(role, companySlug);
+}
+
+// ── DEDICATED CLIENT PORTAL LOGIN ──
+async function clientPortalLogin() {
+  const email    = (document.getElementById('clientLoginUser')?.value || '').trim();
+  const password = (document.getElementById('clientLoginPass')?.value || '').trim();
+  if (!email || !password) { showToast('Missing info', 'Please enter your email and password.', 'warn'); return; }
+  const btn = document.getElementById('clientLoginBtn');
+  if (btn) { btn.textContent = 'Signing in…'; btn.disabled = true; }
+  try {
+    const { data, error } = await _sb.auth.signInWithPassword({ email, password });
+    if (error) { showToast('Sign in failed', error.message, 'error'); return; }
+    currentSessionName = data.user.email;
+    const { data: profile, error: pErr } = await _sb.from('profiles').select('role, company').eq('id', data.user.id).single();
+    if (pErr || !profile) { showToast('Account not set up', 'Contact HR Smart to activate your account.', 'error'); await _sb.auth.signOut(); return; }
+    if (profile.role === 'admin') { showToast('Use admin login', 'Please use the HR Smart Admin Access link below.', 'warn'); await _sb.auth.signOut(); return; }
+    await finishLoginFromDB(profile.role, profile.company);
+  } catch(e) {
+    showToast('Login error', e.message || 'Something went wrong. Please try again.', 'error');
+  } finally {
+    if (btn) { btn.textContent = 'Sign In →'; btn.disabled = false; }
+  }
 }
 
 // Override the original loginAs to route through DB
