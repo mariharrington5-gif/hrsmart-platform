@@ -2182,7 +2182,11 @@ const emailTemplates = {
   reminder: (name,caseId)=>{
     const c=coCtx();
     return {subj:`Leave of Absence Update — Case ${caseId}`,
-    body:`Dear ${name},\n\nThis is a friendly reminder regarding your active leave of absence (Case ${caseId}).\n\nPlease take a moment to:\n\n• Confirm your anticipated return date is still accurate\n• Reach out if your medical situation has changed\n• Ensure any outstanding forms or documentation have been submitted to HR\n\nOur goal is to support you during your leave and make your return as smooth as possible. Please don't hesitate to contact us with any questions.\n\nWarm regards,\nHR Department\n${c.name}\n${c.email}`};}
+    body:`Dear ${name},\n\nThis is a friendly reminder regarding your active leave of absence (Case ${caseId}).\n\nPlease take a moment to:\n\n• Confirm your anticipated return date is still accurate\n• Reach out if your medical situation has changed\n• Ensure any outstanding forms or documentation have been submitted to HR\n\nOur goal is to support you during your leave and make your return as smooth as possible. Please don't hesitate to contact us with any questions.\n\nWarm regards,\nHR Department\n${c.name}\n${c.email}`};},
+  personal: (name,caseId)=>{
+    const c=coCtx();
+    return {subj:`Personal Leave Update — Case ${caseId}`,
+    body:`Dear ${name},\n\nThank you for keeping us informed during your personal leave (Case ${caseId}).\n\nPlease reach out to us if:\n\n• Your expected return date changes\n• You need to extend or modify your leave duration\n• You have any questions or need support\n\nWe want to make sure your leave and return go as smoothly as possible. Please don't hesitate to contact us at ${c.email}.\n\nWarm regards,\nHR Department\n${c.name}`};}
 };
 let currentEmailType = 'cert';
 function setEmailType(type, label) {
@@ -2200,7 +2204,7 @@ let emailAttachedForms = []; // forms selected to accompany the current email dr
 const EMAIL_FORM_LIBRARY = [
   {id:'wh380e', name:'WH-380-E — Employee Health Condition (FMLA)', url:'https://www.dol.gov/sites/dolgov/files/WHD/legacy/files/wh380E.pdf',  types:['FMLA/CFRA','Medical','FMLA']},
   {id:'wh380f', name:'WH-380-F — Family Member Health Condition (FMLA)', url:'https://www.dol.gov/sites/dolgov/files/WHD/legacy/files/wh380F.pdf', types:['Baby Bonding']},
-  {id:'wh381',  name:'WH-381 — Notice of Eligibility & Rights',   url:'https://www.dol.gov/sites/dolgov/files/WHD/legacy/files/WH-381.pdf',   types:['FMLA/CFRA','Pregnancy Disability','Baby Bonding','Personal Leave']},
+  {id:'wh381',  name:'WH-381 — Notice of Eligibility & Rights',   url:'https://www.dol.gov/sites/dolgov/files/WHD/legacy/files/WH-381.pdf',   types:['FMLA/CFRA','Pregnancy Disability','Baby Bonding']},
   {id:'wh382',  name:'WH-382 — FMLA Designation Notice',          url:'https://www.dol.gov/sites/dolgov/files/WHD/legacy/files/WH-382.pdf',   types:['FMLA/CFRA']},
   {id:'dfeh',   name:'DFEH-100-21 — CA Pregnancy Disability Leave Cert', url:'https://calcivilrights.ca.gov/wp-content/uploads/sites/32/2022/11/DFEH-100-21-ENG.pdf', types:['Pregnancy Disability']},
   {id:'cfra2',  name:'CFRA-2 — Baby Bonding Certification',        url:'https://calcivilrights.ca.gov/wp-content/uploads/sites/32/2023/03/CFRA-Baby-Bonding.pdf',    types:['Baby Bonding']},
@@ -2212,7 +2216,7 @@ function renderEmailForms(leaveType) {
   if (!list) return;
   emailAttachedForms = [];
   const primaryId = EMAIL_FORM_PRIMARY[leaveType]; // no fallback — don't attach medical forms for non-medical leaves
-  const relevant = EMAIL_FORM_LIBRARY.filter(f => f.types.includes(leaveType) || f.id === 'wh381');
+  const relevant = EMAIL_FORM_LIBRARY.filter(f => f.types.includes(leaveType));
   if (!relevant.length) { list.innerHTML = '<div style="font-size:.78rem;color:var(--muted)">No standard forms for this leave type.</div>'; return; }
   list.innerHTML = relevant.map(f => `
     <div style="display:flex;align-items:center;gap:6px;background:#f0f4fa;border-radius:5px;padding:4px 8px">
@@ -2243,7 +2247,8 @@ function openEmailModal(id) {
   document.getElementById('emailCC').value = ctx.email;
   // Choose sensible default email type based on leave type
   const medicalLeaves = ['FMLA','Medical','Pregnancy','Workers Comp'];
-  const defaultType = medicalLeaves.some(t => r.type?.includes(t)) ? 'cert' : 'reminder';
+  const defaultType = r.type?.includes('Personal') ? 'personal'
+    : medicalLeaves.some(t => r.type?.includes(t)) ? 'cert' : 'reminder';
   const tmpl = emailTemplates[defaultType](r.name, r.id);
   document.getElementById('emailSubject').value = tmpl.subj;
   document.getElementById('emailBody').value = tmpl.body;
@@ -2281,6 +2286,11 @@ function sendFollowupEmail(){
       type: typeLabel,
       caseId: emailCaseId,
     });
+    // Mark the LOA case so client sees pending status
+    if (r) {
+      r.next = '⏳ Follow-up email pending your approval in the Client Portal.';
+      dbSaveCompany();
+    }
     renderPendingEmails();
     dbSavePendingEmails();
     closeEmailModal();
@@ -2556,8 +2566,9 @@ function approveEmail(i) {
       event: `Follow-up email sent: "${e.subject}"`,
       who: 'HR Smart'
     });
-    scheduleSave();
+    dbSaveCompany();
   }
+  dbSavePendingEmails();
   renderPendingEmails();
   showToast('Email Approved & Sent ✓', `"${e.subject}" has been approved and sent to ${e.name}.`);
 }
@@ -5420,6 +5431,18 @@ function finishLogin(role, company) {
   const safeCompany = COMPANIES[company] ? company : Object.keys(COMPANIES)[0];
   if (!safeCompany) { showToast('No company loaded', 'Contact HR Smart support.', 'error'); return; }
   loadCompany(safeCompany);
+  // Restore email log from DB
+  if (COMPANIES[safeCompany]?.email_log?.length) {
+    emailLogEntries = COMPANIES[safeCompany].email_log;
+    const list = document.getElementById('emailLogList');
+    const count = document.getElementById('emailLogCount');
+    if (count) count.textContent = `${emailLogEntries.length} sent`;
+    if (list) list.innerHTML = emailLogEntries.map(e => `
+      <div class="email-log-item">
+        <div class="el-dot"></div>
+        <div style="flex:1"><strong>${e.name}</strong> — ${e.type}<span style="color:var(--muted);font-size:.75rem;margin-left:6px">${e.time}</span></div>
+      </div>`).join('');
+  }
   // Set session name if not already set via Supabase loginAs()
   if (!currentSessionName) {
     const coName = COMPANIES[safeCompany]?.name || safeCompany;
@@ -5488,6 +5511,7 @@ async function dbSaveCompany() {
     upcoming:         co.upcoming,
     modules:          co.modules,
     audits:           co.audits || [],
+    email_log:        emailLogEntries || [],
     updated_at:       new Date().toISOString(),
   }).eq('id', co._dbId);
   if (error) console.warn('DB save error:', error.message);
@@ -5533,6 +5557,7 @@ async function loadCompanyFromDB(slug) {
     policyUpdates:  data.policy_updates   || [],
     modules:        data.modules          || {loa:true,analytics:true,roster:true,assessments:true,compliance:true,onboarding:true,offboarding:true},
     audits:         data.audits           || [],
+    email_log:      data.email_log        || [],
     id_prefix:      data.id_prefix        || 'EMP-',
     id_base:        data.id_base          || 1000,
   };
